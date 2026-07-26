@@ -1,0 +1,78 @@
+:root {
+  --brand-primary: #412957;
+  --brand-accent: #ceae5f;
+
+  --surface: #fffdf8;
+  --surface-elevated: #ffffff;
+
+  --text-primary: #241b2d;
+  --text-muted: #746b7d;
+
+  --border: #e9e1d6;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-sm: 0 4px 14px rgba(36, 27, 45, 0.08);
+  --shadow-md: 0 12px 32px rgba(36, 27, 45, 0.12);
+
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+
+  font-family:
+    "Segoe UI",
+    Tahoma,
+    Arial,
+    sans-serif;
+
+  color: var(--text-primary);
+  background: var(--surface);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  background: var(--surface);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+#root {
+  min-height: 100vh;
+}
