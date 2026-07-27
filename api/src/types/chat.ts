@@ -67,3 +67,15 @@ export interface SendCustomerMessageInput {
   publicSessionId: string
   content: string
 }
+
+export interface UpdateServiceInput {
+  publicSessionId: string
+  service: {
+    categoryId: string
+    categoryName: string
+    platformId: string
+    platformName: string
+    serviceId: string
+    serviceName: string
+  }
+}

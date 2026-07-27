@@ -5,6 +5,7 @@ import type {
 import {
   createCustomerMessage,
   loadConversation,
+  updateConversationService,
 } from '../services/conversation-service.js'
 
 interface ConversationParams {
@@ -13,6 +14,15 @@ interface ConversationParams {
 
 interface SendMessageBody {
   content: string
+}
+
+interface UpdateServiceBody {
+  categoryId: string
+  categoryName: string
+  platformId: string
+  platformName: string
+  serviceId: string
+  serviceName: string
 }
 
 const conversationParamsSchema = {
@@ -40,6 +50,51 @@ const sendMessageBodySchema = {
       type: 'string',
       minLength: 1,
       maxLength: 5000,
+    },
+  },
+} as const
+
+const updateServiceBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'categoryId',
+    'categoryName',
+    'platformId',
+    'platformName',
+    'serviceId',
+    'serviceName',
+  ],
+  properties: {
+    categoryId: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
+    },
+    categoryName: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
+    },
+    platformId: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
+    },
+    platformName: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
+    },
+    serviceId: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
+    },
+    serviceName: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
     },
   },
 } as const
@@ -126,6 +181,62 @@ export async function conversationRoutes(
       return reply
         .code(201)
         .send(message)
+    },
+  )
+
+  app.put<{
+    Params: ConversationParams
+    Body: UpdateServiceBody
+  }>(
+    '/v1/conversations/:conversationId/service',
+    {
+      schema: {
+        params:
+          conversationParamsSchema,
+
+        body:
+          updateServiceBodySchema,
+      },
+    },
+    async (request, reply) => {
+      const context =
+        await updateConversationService({
+          publicSessionId:
+            request.params.conversationId,
+
+          service: {
+            categoryId:
+              request.body.categoryId,
+
+            categoryName:
+              request.body.categoryName,
+
+            platformId:
+              request.body.platformId,
+
+            platformName:
+              request.body.platformName,
+
+            serviceId:
+              request.body.serviceId,
+
+            serviceName:
+              request.body.serviceName,
+          },
+        })
+
+      if (!context) {
+        return reply
+          .code(404)
+          .send({
+            error:
+              'conversation_not_found',
+          })
+      }
+
+      return reply
+        .code(200)
+        .send(context)
     },
   )
 }

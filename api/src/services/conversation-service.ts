@@ -4,13 +4,16 @@ import {
 
 import {
   findPublicSessionById,
+  updatePublicSessionService,
 } from '../repositories/public-session-repository.js'
 
 import type {
   ChatMessage,
   ChatMode,
+  ConversationContext,
   LoadConversationResult,
   SendCustomerMessageInput,
+  UpdateServiceInput,
 } from '../types/chat.js'
 
 function mapSessionStatusToChatMode(
@@ -27,6 +30,32 @@ function mapSessionStatusToChatMode(
   return 'assistant'
 }
 
+function buildConversationContext(
+  session: Awaited<
+    ReturnType<typeof findPublicSessionById>
+  > extends infer T
+    ? Exclude<T, null>
+    : never,
+): ConversationContext {
+  return {
+    conversationId:
+      session.publicSessionId,
+
+    locale:
+      session.locale,
+
+    mode:
+      mapSessionStatusToChatMode(
+        session.status,
+      ),
+
+    contact: {},
+
+    service:
+      session.metadata.service ?? {},
+  }
+}
+
 export async function loadConversation(
   publicSessionId: string,
 ): Promise<LoadConversationResult | null> {
@@ -40,21 +69,10 @@ export async function loadConversation(
   }
 
   return {
-    context: {
-      conversationId:
-        session.publicSessionId,
-
-      locale:
-        session.locale,
-
-      mode:
-        mapSessionStatusToChatMode(
-          session.status,
-        ),
-
-      contact: {},
-      service: {},
-    },
+    context:
+      buildConversationContext(
+        session,
+      ),
 
     messages: [],
   }
@@ -88,4 +106,22 @@ export async function createCustomerMessage(
     status:
       'sent',
   }
+}
+
+export async function updateConversationService(
+  input: UpdateServiceInput,
+): Promise<ConversationContext | null> {
+  const updatedSession =
+    await updatePublicSessionService(
+      input.publicSessionId,
+      input.service,
+    )
+
+  if (!updatedSession) {
+    return null
+  }
+
+  return buildConversationContext(
+    updatedSession,
+  )
 }
