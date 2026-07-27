@@ -3864,16 +3864,22 @@ button:disabled {
 }
 
 .premium-platform-card__title {
+  display: -webkit-box;
+
   overflow: hidden;
 
   color: var(--brand-primary-deep);
 
   font-size: 11.5px;
   font-weight: 900;
-  line-height: 1.5;
+  line-height: 1.45;
 
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  overflow-wrap: anywhere;
 }
 
 .premium-platform-card__hint {
