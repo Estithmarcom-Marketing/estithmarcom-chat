@@ -141,15 +141,18 @@ export function ChatWidget({
   }
 
   const showWelcome =
-    navigation.screen === 'welcome'
+    navigation.screen ===
+    'welcome'
 
   const showGovernmentPlatforms =
-    navigation.screen === 'platforms' &&
+    navigation.screen ===
+      'platforms' &&
     navigation.categoryId ===
       'government-services'
 
   const showMuqeemServices =
-    navigation.screen === 'services' &&
+    navigation.screen ===
+      'services' &&
     navigation.platformId ===
       'muqeem'
 
@@ -170,10 +173,12 @@ export function ChatWidget({
       : undefined
 
   const isHandoffPending =
-    mode === 'handoff_pending'
+    mode ===
+    'handoff_pending'
 
   const isHumanMode =
-    mode === 'human'
+    mode ===
+    'human'
 
   const isCollectingContact =
     Boolean(
@@ -272,15 +277,24 @@ export function ChatWidget({
             )}
 
           {!isCollectingContact &&
-            isHandoffPending &&
-            !humanTimedOut && (
+            isHandoffPending && (
               <HandoffSystemCard
                 variant="waiting"
               />
             )}
 
           {!isCollectingContact &&
-            isHandoffPending &&
+            isHumanMode &&
+            !humanConnected &&
+            !humanTimedOut && (
+              <HandoffSystemCard
+                variant="handoff-complete"
+              />
+            )}
+
+          {!isCollectingContact &&
+            isHumanMode &&
+            !humanConnected &&
             humanTimedOut &&
             !preferredContactTime && (
               <PreferredContactTime
@@ -291,21 +305,14 @@ export function ChatWidget({
             )}
 
           {!isCollectingContact &&
-            isHandoffPending &&
+            isHumanMode &&
+            !humanConnected &&
             humanTimedOut &&
             preferredContactTime && (
               <PreferredTimeSaved
                 preferredTime={
                   preferredContactTime
                 }
-              />
-            )}
-
-          {!isCollectingContact &&
-            isHumanMode &&
-            !humanConnected && (
-              <HandoffSystemCard
-                variant="handoff-complete"
               />
             )}
 

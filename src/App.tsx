@@ -34,6 +34,9 @@ import {
   isConversationNotFoundError,
 } from './integrations'
 
+const HUMAN_RESPONSE_TIMEOUT_MS =
+  60 * 1000
+
 function getMissingContactField(
   contact: CustomerContact,
 ): ContactField | undefined {
@@ -64,7 +67,13 @@ function App() {
 
   const [
     humanTimedOut,
+    setHumanTimedOut,
   ] = useState(false)
+
+  const [
+    humanWaitStartedAt,
+    setHumanWaitStartedAt,
+  ] = useState<number | null>(null)
 
   const [
     showSystemStatesQA,
@@ -315,6 +324,72 @@ function App() {
   }, [
     state.context
       ?.conversationId,
+  ])
+
+  /*
+   * Human response timeout.
+   *
+   * As soon as the conversation enters human mode,
+   * start a one-minute waiting window.
+   *
+   * If a real human message arrives before the timeout,
+   * cancel the timeout immediately.
+   */
+  useEffect(() => {
+    const isWaitingForHuman =
+      state.context?.mode ===
+        'human' &&
+      !humanConnected
+
+    if (!isWaitingForHuman) {
+      setHumanTimedOut(false)
+      setHumanWaitStartedAt(null)
+
+      return
+    }
+
+    const startedAt =
+      humanWaitStartedAt ??
+      Date.now()
+
+    if (
+      humanWaitStartedAt === null
+    ) {
+      setHumanWaitStartedAt(
+        startedAt,
+      )
+    }
+
+    const elapsed =
+      Date.now() -
+      startedAt
+
+    const remaining =
+      HUMAN_RESPONSE_TIMEOUT_MS -
+      elapsed
+
+    if (remaining <= 0) {
+      setHumanTimedOut(true)
+      return
+    }
+
+    const timer =
+      window.setTimeout(
+        () => {
+          setHumanTimedOut(true)
+        },
+        remaining,
+      )
+
+    return () => {
+      window.clearTimeout(
+        timer,
+      )
+    }
+  }, [
+    state.context?.mode,
+    humanConnected,
+    humanWaitStartedAt,
   ])
 
   async function handleSendMessage(
