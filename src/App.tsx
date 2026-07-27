@@ -46,10 +46,6 @@ function getMissingContactField(
     return 'phone'
   }
 
-  if (!contact.email?.trim()) {
-    return 'email'
-  }
-
   return undefined
 }
 
@@ -350,11 +346,11 @@ function App() {
         <button
           type="button"
           className="mock-timeout-trigger"
-        onClick={() =>
-          setHumanTimedOut(true)
-        }
-      >
-        Mock Human Timeout
+          onClick={() =>
+            setHumanTimedOut(true)
+          }
+        >
+          Mock Human Timeout
         </button>
       )}
 
@@ -362,11 +358,11 @@ function App() {
         <button
           type="button"
           className="mock-human-trigger"
-        onClick={
-          handleMockHumanReply
-        }
-      >
-        Mock Human Reply
+          onClick={
+            handleMockHumanReply
+          }
+        >
+          Mock Human Reply
         </button>
       )}
 
@@ -374,11 +370,11 @@ function App() {
         <button
           type="button"
           className="mock-system-states-trigger"
-        onClick={() =>
-          setShowSystemStatesQA(true)
-        }
-      >
-        System States QA
+          onClick={() =>
+            setShowSystemStatesQA(true)
+          }
+        >
+          System States QA
         </button>
       )}
     </main>
@@ -386,5 +382,3 @@ function App() {
 }
 
 export default App
-
-
