@@ -57,3 +57,8 @@ export interface StartSessionResult {
   context: ConversationContext
   messages: ChatMessage[]
 }
+
+export interface LoadConversationResult {
+  context: ConversationContext
+  messages: ChatMessage[]
+}
