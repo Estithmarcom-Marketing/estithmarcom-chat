@@ -21,13 +21,21 @@ interface ChatwootWidgetTokenPayload {
   iat?: number
 }
 
+interface ChatwootMessageContentAttributes {
+  estithmarcom_origin?: string
+
+  [key: string]: unknown
+}
+
 interface ChatwootWidgetMessageResponse {
   id?: number
   content?: string
   message_type?: number
   content_type?: string
+  content_attributes?: ChatwootMessageContentAttributes
   created_at?: number
   conversation_id?: number
+
   sender?: {
     id?: number
     type?: string
@@ -60,6 +68,7 @@ export interface ChatwootRestoredMessage {
   createdAt: string
   senderType?: string
   senderId?: number
+  contentAttributes: ChatwootMessageContentAttributes
 }
 
 function isPositiveInteger(
@@ -406,6 +415,9 @@ export async function loadChatwootWidgetMessages(
 
         senderId:
           message.sender?.id,
+
+        contentAttributes:
+          message.content_attributes ?? {},
       }),
     )
 }

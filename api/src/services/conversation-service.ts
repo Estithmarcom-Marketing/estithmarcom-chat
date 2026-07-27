@@ -4,6 +4,7 @@ import {
 } from '../clients/chatwoot-client.js'
 
 import {
+  findConversationHumanModeStartedAt,
   findPublicSessionById,
   requestPublicSessionHandoff,
   updatePublicSessionChatwootConversation,
@@ -79,20 +80,61 @@ function buildConversationContext(
 }
 
 function mapRestoredMessageAuthor(
-  messageType: number,
-  chatMode: ChatMode,
+  input: {
+    messageType: number
+    createdAt: string
+    estithmarcomOrigin?: string
+    humanModeStartedAt?: string | null
+  },
 ): MessageAuthor {
-  if (messageType === 0) {
+  if (input.messageType === 0) {
     return 'customer'
   }
 
-  if (messageType === 1) {
-    return chatMode === 'human'
-      ? 'human'
-      : 'assistant'
+  if (input.messageType !== 1) {
+    return 'system'
   }
 
-  return 'system'
+  if (
+    input.estithmarcomOrigin ===
+    'handoff_notice'
+  ) {
+    return 'system'
+  }
+
+  if (
+    input.estithmarcomOrigin ===
+    'assistant'
+  ) {
+    return 'assistant'
+  }
+
+  if (input.humanModeStartedAt) {
+    const messageTime =
+      Date.parse(
+        input.createdAt,
+      )
+
+    const humanModeTime =
+      Date.parse(
+        input.humanModeStartedAt,
+      )
+
+    if (
+      Number.isFinite(
+        messageTime,
+      ) &&
+      Number.isFinite(
+        humanModeTime,
+      ) &&
+      messageTime >=
+        humanModeTime
+    ) {
+      return 'human'
+    }
+  }
+
+  return 'assistant'
 }
 
 export async function loadConversation(
@@ -124,6 +166,13 @@ export async function loadConversation(
       session.chatwootAuthToken,
     )
 
+  const humanModeStartedAt =
+    session.conversationId === null
+      ? null
+      : await findConversationHumanModeStartedAt(
+          session.conversationId,
+        )
+
   const messages: ChatMessage[] =
     chatwootMessages
       .filter(
@@ -133,27 +182,44 @@ export async function loadConversation(
             session.conversationId,
       )
       .map(
-        (message) => ({
-          id:
-            String(
-              message.messageId,
-            ),
+        (message) => {
+          const origin =
+            message
+              .contentAttributes
+              .estithmarcom_origin
 
-          author:
-            mapRestoredMessageAuthor(
-              message.messageType,
-              context.mode,
-            ),
+          return {
+            id:
+              String(
+                message.messageId,
+              ),
 
-          content:
-            message.content,
+            author:
+              mapRestoredMessageAuthor({
+                messageType:
+                  message.messageType,
 
-          createdAt:
-            message.createdAt,
+                createdAt:
+                  message.createdAt,
 
-          status:
-            'sent',
-        }),
+                estithmarcomOrigin:
+                  typeof origin === 'string'
+                    ? origin
+                    : undefined,
+
+                humanModeStartedAt,
+              }),
+
+            content:
+              message.content,
+
+            createdAt:
+              message.createdAt,
+
+            status:
+              'sent',
+          }
+        },
       )
 
   return {

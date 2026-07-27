@@ -446,3 +446,32 @@ export async function updatePublicSessionPreferredContactTime(
 
   return mapPublicSessionRow(row)
 }
+
+export async function findConversationHumanModeStartedAt(
+  conversationId: number,
+): Promise<string | null> {
+  const result =
+    await databasePool.query<{
+      human_mode_started_at: Date | null
+    }>(
+      `
+        SELECT
+          human_mode_started_at
+        FROM est_chat_conversation_state
+        WHERE conversation_id = $1
+        LIMIT 1
+      `,
+      [
+        conversationId,
+      ],
+    )
+
+  const row =
+    result.rows[0]
+
+  return (
+    row?.human_mode_started_at
+      ?.toISOString() ??
+    null
+  )
+}
