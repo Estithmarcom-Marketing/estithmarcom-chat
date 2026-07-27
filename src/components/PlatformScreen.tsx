@@ -1,52 +1,15 @@
 ﻿import {
+  getCategoryById,
+  getGroupsByCategory,
+} from '../catalog/catalog-selectors'
+
+import {
   Breadcrumb,
   PlatformCard,
 } from './index'
 
-const mockGovernmentPlatforms = [
-  {
-    id: 'qiwa',
-    title: 'قوى',
-    icon: '🏢',
-  },
-  {
-    id: 'commerce',
-    title: 'وزارة التجارة',
-    icon: '🏛️',
-  },
-  {
-    id: 'balady',
-    title: 'بلدي',
-    icon: '🏙️',
-  },
-  {
-    id: 'muqeem',
-    title: 'مقيم',
-    icon: '🪪',
-  },
-  {
-    id: 'zatca',
-    title: 'ZATCA',
-    icon: '🧾',
-  },
-  {
-    id: 'mudad',
-    title: 'مدد',
-    icon: '📋',
-  },
-  {
-    id: 'national-address',
-    title: 'العنوان الوطني',
-    icon: '📍',
-  },
-  {
-    id: 'chamber',
-    title: 'الغرفة التجارية',
-    icon: '🏛️',
-  },
-] as const
-
 interface PlatformScreenProps {
+  categoryId: string
   onBackHome?: () => void
   onSelectPlatform?: (
     platformId: string,
@@ -54,9 +17,22 @@ interface PlatformScreenProps {
 }
 
 export function PlatformScreen({
+  categoryId,
   onBackHome,
   onSelectPlatform,
 }: PlatformScreenProps) {
+  const category =
+    getCategoryById(categoryId)
+
+  const groups =
+    getGroupsByCategory(
+      categoryId,
+    )
+
+  if (!category) {
+    return null
+  }
+
   return (
     <section className="platform-screen premium-platform-screen">
       <Breadcrumb
@@ -66,8 +42,8 @@ export function PlatformScreen({
             label: 'الرئيسية',
           },
           {
-            id: 'government',
-            label: 'الخدمات الحكومية',
+            id: category.id,
+            label: category.title,
             current: true,
           },
         ]}
@@ -81,21 +57,21 @@ export function PlatformScreen({
       <header className="premium-platform-screen__hero">
         <div className="premium-platform-screen__hero-icon">
           <span aria-hidden="true">
-            🏛️
+            {category.icon}
           </span>
         </div>
 
         <div className="premium-platform-screen__hero-content">
           <span className="premium-platform-screen__eyebrow">
-            الخدمات الحكومية
+            {category.title}
           </span>
 
           <h2>
-            اختر الجهة المناسبة
+            اختر المسار المناسب
           </h2>
 
           <p>
-            اختر المنصة الحكومية وسنعرض لك الخدمات المتاحة بخطوات واضحة.
+            اختر المسار وسنعرض لك الخدمات المتاحة بخطوات واضحة.
           </p>
         </div>
       </header>
@@ -103,29 +79,29 @@ export function PlatformScreen({
       <div className="premium-platform-screen__section-heading">
         <div>
           <span>
-            الجهات المتاحة
+            الخيارات المتاحة
           </span>
 
           <strong>
-            اختر منصة للمتابعة
+            اختر للمتابعة
           </strong>
         </div>
 
         <span className="premium-platform-screen__count">
-          {mockGovernmentPlatforms.length} جهات
+          {groups.length} خيارات
         </span>
       </div>
 
       <div className="platform-screen__grid premium-platform-grid">
-        {mockGovernmentPlatforms.map(
-          (platform) => (
+        {groups.map(
+          (group) => (
             <PlatformCard
-              key={platform.id}
-              icon={platform.icon}
-              title={platform.title}
+              key={group.id}
+              icon={group.icon}
+              title={group.title}
               onSelect={() =>
                 onSelectPlatform?.(
-                  platform.id,
+                  group.id,
                 )
               }
             />

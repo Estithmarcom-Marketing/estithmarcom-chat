@@ -1,28 +1,20 @@
 ﻿import {
-  Breadcrumb,
-  CatalogSearch,
-} from './index'
+  getCategoryById,
+  getGroupById,
+  getServicesByGroup,
+} from '../catalog/catalog-selectors'
 
-const mockMuqeemServices = [
-  {
-    id: 'issue-residency',
-    title: 'إصدار إقامة',
-  },
-  {
-    id: 'renew-residency',
-    title: 'تجديد إقامة',
-  },
-  {
-    id: 'exit-reentry',
-    title: 'تأشيرة خروج وعودة',
-  },
-  {
-    id: 'final-exit',
-    title: 'خروج نهائي',
-  },
-] as const
+import {
+  Breadcrumb,
+} from './Breadcrumb'
+
+import {
+  CatalogSearch,
+} from './CatalogSearch'
 
 interface ServiceListScreenProps {
+  categoryId: string
+  groupId: string
   onHome?: () => void
   onBackToPlatforms?: () => void
   onSelectService?: (
@@ -31,10 +23,34 @@ interface ServiceListScreenProps {
 }
 
 export function ServiceListScreen({
+  categoryId,
+  groupId,
   onHome,
   onBackToPlatforms,
   onSelectService,
 }: ServiceListScreenProps) {
+  const category =
+    getCategoryById(
+      categoryId,
+    )
+
+  const group =
+    getGroupById(
+      groupId,
+    )
+
+  const services =
+    getServicesByGroup(
+      groupId,
+    )
+
+  if (
+    !category ||
+    !group
+  ) {
+    return null
+  }
+
   return (
     <section className="service-list-screen premium-service-list">
       <Breadcrumb
@@ -44,12 +60,12 @@ export function ServiceListScreen({
             label: 'الرئيسية',
           },
           {
-            id: 'government',
-            label: 'الخدمات الحكومية',
+            id: category.id,
+            label: category.title,
           },
           {
-            id: 'muqeem',
-            label: 'مقيم',
+            id: group.id,
+            label: group.title,
             current: true,
           },
         ]}
@@ -58,7 +74,10 @@ export function ServiceListScreen({
             onHome?.()
           }
 
-          if (id === 'government') {
+          if (
+            id ===
+            category.id
+          ) {
             onBackToPlatforms?.()
           }
         }}
@@ -69,12 +88,12 @@ export function ServiceListScreen({
           className="premium-service-list__icon"
           aria-hidden="true"
         >
-          🪪
+          {group.icon}
         </div>
 
         <div>
           <span className="premium-service-list__eyebrow">
-            منصة مقيم
+            {group.title}
           </span>
 
           <h2>
@@ -88,8 +107,15 @@ export function ServiceListScreen({
       </header>
 
       <CatalogSearch
-        items={[...mockMuqeemServices]}
-        onSelect={onSelectService}
+        items={services.map(
+          (service) => ({
+            id: service.id,
+            title: service.title,
+          }),
+        )}
+        onSelect={
+          onSelectService
+        }
       />
     </section>
   )

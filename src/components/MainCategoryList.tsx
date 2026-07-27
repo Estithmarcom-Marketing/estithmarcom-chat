@@ -1,6 +1,10 @@
-﻿import type {
+import type {
   CSSProperties,
 } from 'react'
+
+import {
+  getCatalogCategories,
+} from '../catalog/catalog-selectors'
 
 import {
   MainCategoryCard,
@@ -12,30 +16,12 @@ interface MainCategoryListProps {
   ) => void
 }
 
-const categories = [
-  {
-    id: 'company-formation',
-    icon: '🏢',
-    title: 'تأسيس الشركات',
-    subtitle: 'ابدأ شركتك بخطوات واضحة ومنظمة',
-  },
-  {
-    id: 'government-services',
-    icon: '🏛️',
-    title: 'الخدمات الحكومية',
-    subtitle: 'قوى • بلدي • مقيم • ZATCA والمزيد',
-  },
-  {
-    id: 'premium-residency',
-    icon: '⭐',
-    title: 'الإقامة المميزة',
-    subtitle: 'استعرض الخيارات وحدد المسار المناسب',
-  },
-] as const
-
 export function MainCategoryList({
   onSelectCategory,
 }: MainCategoryListProps) {
+  const categories =
+    getCatalogCategories()
+
   return (
     <section
       className="main-category-list premium-category-list"
@@ -56,7 +42,7 @@ export function MainCategoryList({
           className="premium-category-list__badge"
           aria-hidden="true"
         >
-          3 مسارات
+          {categories.length} مسارات
         </span>
       </div>
 
@@ -88,4 +74,3 @@ export function MainCategoryList({
     </section>
   )
 }
-

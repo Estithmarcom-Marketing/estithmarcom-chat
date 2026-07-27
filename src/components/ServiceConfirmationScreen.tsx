@@ -1,10 +1,10 @@
 ﻿import {
   Breadcrumb,
-} from './index'
+} from './Breadcrumb'
 
 interface ServiceConfirmationScreenProps {
   serviceName: string
-  platformName: string
+  groupName: string
   onHome?: () => void
   onBackToServices?: () => void
   onRequestSpecialist?: () => void
@@ -12,7 +12,7 @@ interface ServiceConfirmationScreenProps {
 
 export function ServiceConfirmationScreen({
   serviceName,
-  platformName,
+  groupName,
   onHome,
   onBackToServices,
   onRequestSpecialist,
@@ -27,7 +27,7 @@ export function ServiceConfirmationScreen({
           },
           {
             id: 'services',
-            label: platformName,
+            label: groupName,
           },
           {
             id: 'selected',
@@ -64,7 +64,7 @@ export function ServiceConfirmationScreen({
           </h2>
 
           <p>
-            عبر منصة {platformName}
+            ضمن {groupName}
           </p>
         </div>
       </div>

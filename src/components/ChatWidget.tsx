@@ -13,6 +13,12 @@ import type {
 } from './ContactEnrichment'
 
 import {
+  getCategoryById,
+  getGroupById,
+  getServiceById,
+} from '../catalog/catalog-selectors'
+
+import {
   initialNavigationState,
   navigationReducer,
 } from '../state'
@@ -33,30 +39,6 @@ import {
   SpecialistButton,
   WelcomeCard,
 } from './index'
-
-const categoryNames: Record<string, string> = {
-  'government-services':
-    'الخدمات الحكومية',
-}
-
-const platformNames: Record<string, string> = {
-  muqeem:
-    'مقيم',
-}
-
-const serviceNames: Record<string, string> = {
-  'issue-residency':
-    'إصدار إقامة',
-
-  'renew-residency':
-    'تجديد إقامة',
-
-  'exit-reentry':
-    'تأشيرة خروج وعودة',
-
-  'final-exit':
-    'خروج نهائي',
-}
 
 interface ChatWidgetProps {
   isOpen: boolean
@@ -144,32 +126,55 @@ export function ChatWidget({
     navigation.screen ===
     'welcome'
 
-  const showGovernmentPlatforms =
+  const showCategoryGroups =
     navigation.screen ===
       'platforms' &&
-    navigation.categoryId ===
-      'government-services'
+    Boolean(
+      navigation.categoryId,
+    )
 
-  const showMuqeemServices =
+  const showServices =
     navigation.screen ===
       'services' &&
-    navigation.platformId ===
-      'muqeem'
+    Boolean(
+      navigation.categoryId,
+    ) &&
+    Boolean(
+      navigation.platformId,
+    )
 
   const showServiceDetail =
     navigation.screen ===
       'service-detail' &&
-    navigation.platformId ===
-      'muqeem' &&
+    Boolean(
+      navigation.categoryId,
+    ) &&
+    Boolean(
+      navigation.platformId,
+    ) &&
     Boolean(
       navigation.serviceId,
     )
 
-  const selectedServiceName =
+  const selectedCategory =
+    navigation.categoryId
+      ? getCategoryById(
+          navigation.categoryId,
+        )
+      : undefined
+
+  const selectedGroup =
+    navigation.platformId
+      ? getGroupById(
+          navigation.platformId,
+        )
+      : undefined
+
+  const selectedService =
     navigation.serviceId
-      ? serviceNames[
-          navigation.serviceId
-        ]
+      ? getServiceById(
+          navigation.serviceId,
+        )
       : undefined
 
   const isHandoffPending =
@@ -198,45 +203,57 @@ export function ChatWidget({
     const categoryId =
       navigation.categoryId
 
-    const platformId =
+    const groupId =
       navigation.platformId
-
-    const serviceName =
-      serviceNames[
-        serviceId
-      ]
-
-    const categoryName =
-      categoryId
-        ? categoryNames[
-            categoryId
-          ]
-        : undefined
-
-    const platformName =
-      platformId
-        ? platformNames[
-            platformId
-          ]
-        : undefined
 
     if (
       !categoryId ||
-      !categoryName ||
-      !platformId ||
-      !platformName ||
-      !serviceName
+      !groupId
+    ) {
+      return
+    }
+
+    const category =
+      getCategoryById(
+        categoryId,
+      )
+
+    const group =
+      getGroupById(
+        groupId,
+      )
+
+    const service =
+      getServiceById(
+        serviceId,
+      )
+
+    if (
+      !category ||
+      !group ||
+      !service
     ) {
       return
     }
 
     onSelectService({
-      categoryId,
-      categoryName,
-      platformId,
-      platformName,
-      serviceId,
-      serviceName,
+      categoryId:
+        category.id,
+
+      categoryName:
+        category.title,
+
+      platformId:
+        group.id,
+
+      platformName:
+        group.title,
+
+      serviceId:
+        service.id,
+
+      serviceName:
+        service.title,
     })
   }
 
@@ -261,7 +278,9 @@ export function ChatWidget({
       <div className="chat-widget__body">
         <div className="chat-widget__content">
           <ConversationTimeline
-            messages={messages}
+            messages={
+              messages
+            }
           />
 
           {isCollectingContact &&
@@ -355,8 +374,12 @@ export function ChatWidget({
           {!isCollectingContact &&
             !isHandoffPending &&
             !isHumanMode &&
-            showGovernmentPlatforms && (
+            showCategoryGroups &&
+            navigation.categoryId && (
               <PlatformScreen
+                categoryId={
+                  navigation.categoryId
+                }
                 onBackHome={() => {
                   dispatchNavigation({
                     type:
@@ -379,8 +402,16 @@ export function ChatWidget({
           {!isCollectingContact &&
             !isHandoffPending &&
             !isHumanMode &&
-            showMuqeemServices && (
+            showServices &&
+            navigation.categoryId &&
+            navigation.platformId && (
               <ServiceListScreen
+                categoryId={
+                  navigation.categoryId
+                }
+                groupId={
+                  navigation.platformId
+                }
                 onHome={() => {
                   dispatchNavigation({
                     type:
@@ -403,12 +434,16 @@ export function ChatWidget({
             !isHandoffPending &&
             !isHumanMode &&
             showServiceDetail &&
-            selectedServiceName && (
+            selectedCategory &&
+            selectedGroup &&
+            selectedService && (
               <ServiceConfirmationScreen
                 serviceName={
-                  selectedServiceName
+                  selectedService.title
                 }
-                platformName="مقيم"
+                groupName={
+                  selectedGroup.title
+                }
                 onHome={() => {
                   dispatchNavigation({
                     type:
