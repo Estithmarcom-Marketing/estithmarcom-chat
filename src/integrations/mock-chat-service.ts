@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ChatMessage,
   ConversationContext,
 } from '../types'
@@ -21,7 +21,8 @@ const createInitialContext = (): ConversationContext => ({
   service: {},
 })
 
-let context: ConversationContext = createInitialContext()
+let context: ConversationContext =
+  createInitialContext()
 
 let messages: ChatMessage[] = []
 
@@ -59,7 +60,10 @@ export const mockChatService: ChatService = {
       status: 'sent',
     }
 
-    messages = [...messages, message]
+    messages = [
+      ...messages,
+      message,
+    ]
 
     return message
   },
@@ -69,7 +73,9 @@ export const mockChatService: ChatService = {
   ): Promise<ConversationContext> {
     context = {
       ...context,
-      conversationId: input.conversationId ?? context.conversationId,
+      conversationId:
+        input.conversationId ??
+        context.conversationId,
       service: {
         categoryId: input.categoryId,
         platformId: input.platformId,
@@ -85,7 +91,9 @@ export const mockChatService: ChatService = {
   ): Promise<ConversationContext> {
     context = {
       ...context,
-      conversationId: conversationId ?? context.conversationId,
+      conversationId:
+        conversationId ??
+        context.conversationId,
       mode: 'handoff_pending',
     }
 
@@ -97,7 +105,9 @@ export const mockChatService: ChatService = {
   ): Promise<ConversationContext> {
     context = {
       ...context,
-      conversationId: input.conversationId ?? context.conversationId,
+      conversationId:
+        input.conversationId ??
+        context.conversationId,
       contact: {
         ...context.contact,
         ...input.contact,
@@ -112,10 +122,80 @@ export const mockChatService: ChatService = {
   ): Promise<ConversationContext> {
     context = {
       ...context,
-      conversationId: input.conversationId ?? context.conversationId,
-      preferredContactTime: input.preferredContactTime,
+      conversationId:
+        input.conversationId ??
+        context.conversationId,
+      preferredContactTime:
+        input.preferredContactTime,
     }
 
     return context
   },
+}
+
+export function createMockAssistantReply(
+  content: string,
+): ChatMessage {
+  const reply: ChatMessage = {
+    id: crypto.randomUUID(),
+    author: 'assistant',
+    content,
+    createdAt: new Date().toISOString(),
+    status: 'sent',
+  }
+
+  messages = [
+    ...messages,
+    reply,
+  ]
+
+  return reply
+}
+
+export function createMockSystemMessage(
+  content: string,
+): ChatMessage {
+  const systemMessage: ChatMessage = {
+    id: crypto.randomUUID(),
+    author: 'system',
+    content,
+    createdAt: new Date().toISOString(),
+    status: 'sent',
+  }
+
+  messages = [
+    ...messages,
+    systemMessage,
+  ]
+
+  return systemMessage
+}
+
+export function connectMockHuman():
+  ConversationContext {
+  context = {
+    ...context,
+    mode: 'human',
+  }
+
+  return context
+}
+
+export function createMockHumanReply(
+  content: string,
+): ChatMessage {
+  const reply: ChatMessage = {
+    id: crypto.randomUUID(),
+    author: 'human',
+    content,
+    createdAt: new Date().toISOString(),
+    status: 'sent',
+  }
+
+  messages = [
+    ...messages,
+    reply,
+  ]
+
+  return reply
 }
