@@ -1,5 +1,6 @@
 import {
   createChatwootWidgetMessage,
+  loadChatwootWidgetMessages,
 } from '../clients/chatwoot-client.js'
 
 import {
@@ -16,6 +17,7 @@ import type {
   ChatMode,
   ConversationContext,
   LoadConversationResult,
+  MessageAuthor,
   PreferredContactTimeInput,
   RequestHandoffInput,
   SendCustomerMessageInput,
@@ -76,6 +78,23 @@ function buildConversationContext(
   }
 }
 
+function mapRestoredMessageAuthor(
+  messageType: number,
+  chatMode: ChatMode,
+): MessageAuthor {
+  if (messageType === 0) {
+    return 'customer'
+  }
+
+  if (messageType === 1) {
+    return chatMode === 'human'
+      ? 'human'
+      : 'assistant'
+  }
+
+  return 'system'
+}
+
 export async function loadConversation(
   publicSessionId: string,
 ): Promise<LoadConversationResult | null> {
@@ -88,13 +107,58 @@ export async function loadConversation(
     return null
   }
 
-  return {
-    context:
-      buildConversationContext(
-        session,
-      ),
+  const context =
+    buildConversationContext(
+      session,
+    )
 
-    messages: [],
+  if (!session.chatwootAuthToken) {
+    return {
+      context,
+      messages: [],
+    }
+  }
+
+  const chatwootMessages =
+    await loadChatwootWidgetMessages(
+      session.chatwootAuthToken,
+    )
+
+  const messages: ChatMessage[] =
+    chatwootMessages
+      .filter(
+        (message) =>
+          session.conversationId === null ||
+          message.conversationId ===
+            session.conversationId,
+      )
+      .map(
+        (message) => ({
+          id:
+            String(
+              message.messageId,
+            ),
+
+          author:
+            mapRestoredMessageAuthor(
+              message.messageType,
+              context.mode,
+            ),
+
+          content:
+            message.content,
+
+          createdAt:
+            message.createdAt,
+
+          status:
+            'sent',
+        }),
+      )
+
+  return {
+    context,
+    messages,
   }
 }
 

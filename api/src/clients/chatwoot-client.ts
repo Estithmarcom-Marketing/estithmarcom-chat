@@ -28,6 +28,15 @@ interface ChatwootWidgetMessageResponse {
   content_type?: string
   created_at?: number
   conversation_id?: number
+  sender?: {
+    id?: number
+    type?: string
+    name?: string
+  }
+}
+
+interface ChatwootWidgetMessagesResponse {
+  payload?: ChatwootWidgetMessageResponse[]
 }
 
 export interface InitializedChatwootWidget {
@@ -41,6 +50,16 @@ export interface CreatedChatwootMessage {
   conversationId: number
   content: string
   createdAt: string
+}
+
+export interface ChatwootRestoredMessage {
+  messageId: number
+  conversationId: number
+  messageType: number
+  content: string
+  createdAt: string
+  senderType?: string
+  senderId?: number
 }
 
 function isPositiveInteger(
@@ -310,4 +329,83 @@ export async function createChatwootWidgetMessage(
         response.created_at * 1000,
       ).toISOString(),
   }
+}
+
+export async function loadChatwootWidgetMessages(
+  authToken: string,
+): Promise<ChatwootRestoredMessage[]> {
+  const response =
+    await chatwootRequest<
+      ChatwootWidgetMessageResponse[] |
+      ChatwootWidgetMessagesResponse
+    >(
+      `/api/v1/widget/messages?website_token=${encodeURIComponent(
+        chatwootConfig.websiteToken,
+      )}`,
+      {
+        method:
+          'GET',
+
+        headers: {
+          'X-Auth-Token':
+            authToken,
+        },
+      },
+    )
+
+  const messages =
+    Array.isArray(response)
+      ? response
+      : response.payload ?? []
+
+  return messages
+    .filter(
+      (
+        message,
+      ): message is ChatwootWidgetMessageResponse & {
+        id: number
+        conversation_id: number
+        message_type: number
+        created_at: number
+      } =>
+        isPositiveInteger(
+          message.id,
+        ) &&
+        isPositiveInteger(
+          message.conversation_id,
+        ) &&
+        typeof message.message_type ===
+          'number' &&
+        typeof message.created_at ===
+          'number' &&
+        Number.isFinite(
+          message.created_at,
+        ),
+    )
+    .map(
+      (message) => ({
+        messageId:
+          message.id,
+
+        conversationId:
+          message.conversation_id,
+
+        messageType:
+          message.message_type,
+
+        content:
+          message.content ?? '',
+
+        createdAt:
+          new Date(
+            message.created_at * 1000,
+          ).toISOString(),
+
+        senderType:
+          message.sender?.type,
+
+        senderId:
+          message.sender?.id,
+      }),
+    )
 }
