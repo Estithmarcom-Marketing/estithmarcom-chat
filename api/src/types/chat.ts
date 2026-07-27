@@ -84,3 +84,10 @@ export interface UpdateContactInput {
   publicSessionId: string
   contact: Partial<CustomerContact>
 }
+
+export interface RequestHandoffInput {
+  publicSessionId: string
+  handoffReason?: string
+  originalQuestion?: string
+  intent?: string
+}

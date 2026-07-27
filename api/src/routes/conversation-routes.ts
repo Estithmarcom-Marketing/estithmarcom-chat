@@ -5,6 +5,7 @@ import type {
 import {
   createCustomerMessage,
   loadConversation,
+  requestConversationHandoff,
   updateConversationContact,
   updateConversationService,
 } from '../services/conversation-service.js'
@@ -30,6 +31,12 @@ interface UpdateContactBody {
   name?: string
   phone?: string
   email?: string
+}
+
+interface RequestHandoffBody {
+  handoffReason?: string
+  originalQuestion?: string
+  intent?: string
 }
 
 const conversationParamsSchema = {
@@ -133,6 +140,31 @@ const updateContactBodySchema = {
       type: 'string',
       minLength: 1,
       maxLength: 320,
+    },
+  },
+} as const
+
+const requestHandoffBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+
+  properties: {
+    handoffReason: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 1000,
+    },
+
+    originalQuestion: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 5000,
+    },
+
+    intent: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
     },
   },
 } as const
@@ -366,6 +398,51 @@ export async function conversationRoutes(
             request.params.conversationId,
 
           contact,
+        })
+
+      if (!context) {
+        return reply
+          .code(404)
+          .send({
+            error:
+              'conversation_not_found',
+          })
+      }
+
+      return reply
+        .code(200)
+        .send(context)
+    },
+  )
+
+  app.post<{
+    Params: ConversationParams
+    Body: RequestHandoffBody
+  }>(
+    '/v1/conversations/:conversationId/handoff',
+    {
+      schema: {
+        params:
+          conversationParamsSchema,
+
+        body:
+          requestHandoffBodySchema,
+      },
+    },
+    async (request, reply) => {
+      const context =
+        await requestConversationHandoff({
+          publicSessionId:
+            request.params.conversationId,
+
+          handoffReason:
+            request.body.handoffReason?.trim(),
+
+          originalQuestion:
+            request.body.originalQuestion?.trim(),
+
+          intent:
+            request.body.intent?.trim(),
         })
 
       if (!context) {

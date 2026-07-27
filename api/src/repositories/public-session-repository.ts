@@ -19,6 +19,9 @@ export interface PublicSessionRecord {
   metadata: {
     service?: SelectedServiceContext
     contact?: CustomerContact
+    handoffReason?: string
+    originalQuestion?: string
+    intent?: string
   }
 
   createdAt: string
@@ -36,6 +39,9 @@ interface PublicSessionRow {
   metadata: {
     service?: SelectedServiceContext
     contact?: CustomerContact
+    handoffReason?: string
+    originalQuestion?: string
+    intent?: string
   }
 
   created_at: Date
@@ -228,6 +234,64 @@ export async function updatePublicSessionContact(
       [
         publicSessionId,
         JSON.stringify(contact),
+      ],
+    )
+
+  const row = result.rows[0]
+
+  if (!row) {
+    return null
+  }
+
+  return mapPublicSessionRow(row)
+}
+
+export async function requestPublicSessionHandoff(
+  publicSessionId: string,
+  handoff: {
+    handoffReason?: string
+    originalQuestion?: string
+    intent?: string
+  },
+): Promise<PublicSessionRecord | null> {
+  const result =
+    await databasePool.query<PublicSessionRow>(
+      `
+        UPDATE est_chat_public_sessions
+        SET
+          status = 'handoff_pending',
+
+          metadata =
+            COALESCE(metadata, '{}'::jsonb)
+            ||
+            jsonb_strip_nulls(
+              jsonb_build_object(
+                'handoffReason', $2::text,
+                'originalQuestion', $3::text,
+                'intent', $4::text
+              )
+            ),
+
+          updated_at = now()
+
+        WHERE public_session_id = $1
+
+        RETURNING
+          public_session_id,
+          conversation_id,
+          account_id,
+          inbox_id,
+          locale,
+          status,
+          metadata,
+          created_at,
+          updated_at
+      `,
+      [
+        publicSessionId,
+        handoff.handoffReason ?? null,
+        handoff.originalQuestion ?? null,
+        handoff.intent ?? null,
       ],
     )
 

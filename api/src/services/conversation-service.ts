@@ -4,6 +4,7 @@ import {
 
 import {
   findPublicSessionById,
+  requestPublicSessionHandoff,
   updatePublicSessionContact,
   updatePublicSessionService,
 } from '../repositories/public-session-repository.js'
@@ -13,6 +14,7 @@ import type {
   ChatMode,
   ConversationContext,
   LoadConversationResult,
+  RequestHandoffInput,
   SendCustomerMessageInput,
   UpdateContactInput,
   UpdateServiceInput,
@@ -56,6 +58,15 @@ function buildConversationContext(
 
     service:
       session.metadata.service ?? {},
+
+    originalQuestion:
+      session.metadata.originalQuestion,
+
+    intent:
+      session.metadata.intent,
+
+    handoffReason:
+      session.metadata.handoffReason,
   }
 }
 
@@ -136,6 +147,33 @@ export async function updateConversationContact(
     await updatePublicSessionContact(
       input.publicSessionId,
       input.contact,
+    )
+
+  if (!updatedSession) {
+    return null
+  }
+
+  return buildConversationContext(
+    updatedSession,
+  )
+}
+
+export async function requestConversationHandoff(
+  input: RequestHandoffInput,
+): Promise<ConversationContext | null> {
+  const updatedSession =
+    await requestPublicSessionHandoff(
+      input.publicSessionId,
+      {
+        handoffReason:
+          input.handoffReason,
+
+        originalQuestion:
+          input.originalQuestion,
+
+        intent:
+          input.intent,
+      },
     )
 
   if (!updatedSession) {
