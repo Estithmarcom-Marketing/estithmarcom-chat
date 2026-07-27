@@ -326,15 +326,6 @@ function App() {
       ?.conversationId,
   ])
 
-  /*
-   * Human response timeout.
-   *
-   * As soon as the conversation enters human mode,
-   * start a one-minute waiting window.
-   *
-   * If a real human message arrives before the timeout,
-   * cancel the timeout immediately.
-   */
   useEffect(() => {
     const isWaitingForHuman =
       state.context?.mode ===
@@ -628,6 +619,7 @@ function App() {
       )
     }
   }
+
   if (showSystemStatesQA) {
     return (
       <main className="system-states-page">
@@ -721,6 +713,11 @@ function App() {
           void handleContactField(
             field,
             value,
+          )
+        }}
+        onCancelContactEnrichment={() => {
+          setSpecialistRequested(
+            false,
           )
         }}
         onSubmitPreferredContactTime={(

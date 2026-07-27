@@ -15,6 +15,8 @@ interface ContactEnrichmentProps {
     field: ContactField,
     value: string,
   ) => void
+
+  onBack?: () => void
 }
 
 const fieldConfig = {
@@ -64,6 +66,7 @@ const fieldConfig = {
 export function ContactEnrichment({
   field,
   onSubmit,
+  onBack,
 }: ContactEnrichmentProps) {
   const [
     value,
@@ -174,6 +177,22 @@ export function ContactEnrichment({
           </span>
         </button>
       </form>
+
+      {onBack && (
+        <button
+          type="button"
+          className="premium-contact-enrichment__back"
+          onClick={onBack}
+        >
+          <span aria-hidden="true">
+            →
+          </span>
+
+          <span>
+            الرجوع إلى الخدمة
+          </span>
+        </button>
+      )}
 
       <div className="premium-contact-enrichment__trust">
         <span aria-hidden="true">

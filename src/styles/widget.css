@@ -4874,6 +4874,56 @@ button:disabled {
   cursor: default;
 }
 
+.premium-contact-enrichment__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  align-self: flex-start;
+
+  min-height: 38px;
+
+  padding: 7px 11px;
+
+  border:
+    1px solid
+    rgba(65, 41, 87, 0.12);
+
+  border-radius: 12px;
+
+  background:
+    rgba(255, 255, 255, 0.86);
+
+  color:
+    var(--brand-primary-deep);
+
+  font-size: 10px;
+  font-weight: 850;
+
+  transition:
+    border-color
+      var(--duration-fast)
+      var(--ease-standard),
+    background
+      var(--duration-fast)
+      var(--ease-standard),
+    transform
+      var(--duration-normal)
+      var(--ease-emphasized);
+}
+
+.premium-contact-enrichment__back:hover {
+  border-color:
+    rgba(206, 174, 95, 0.38);
+
+  background:
+    var(--brand-accent-soft);
+
+  transform:
+    translateX(2px);
+}
+
 .premium-contact-enrichment__trust {
   display: flex;
   align-items: center;

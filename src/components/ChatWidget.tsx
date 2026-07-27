@@ -74,6 +74,9 @@ interface ChatWidgetProps {
     value: string,
   ) => void
 
+  onCancelContactEnrichment:
+    () => void
+
   onSubmitPreferredContactTime: (
     preferredTime: string,
   ) => void
@@ -96,6 +99,7 @@ export function ChatWidget({
   onSelectService,
   onRequestSpecialist,
   onSubmitContactField,
+  onCancelContactEnrichment,
   onSubmitPreferredContactTime,
 }: ChatWidgetProps) {
   const [
@@ -291,6 +295,9 @@ export function ChatWidget({
                 }
                 onSubmit={
                   onSubmitContactField
+                }
+                onBack={
+                  onCancelContactEnrichment
                 }
               />
             )}
