@@ -286,6 +286,18 @@ export function ChatWidget({
           {!isCollectingContact &&
             isHumanMode &&
             !humanConnected &&
+            preferredContactTime && (
+              <PreferredTimeSaved
+                preferredTime={
+                  preferredContactTime
+                }
+              />
+            )}
+
+          {!isCollectingContact &&
+            isHumanMode &&
+            !humanConnected &&
+            !preferredContactTime &&
             !humanTimedOut && (
               <HandoffSystemCard
                 variant="handoff-complete"
@@ -295,23 +307,11 @@ export function ChatWidget({
           {!isCollectingContact &&
             isHumanMode &&
             !humanConnected &&
-            humanTimedOut &&
-            !preferredContactTime && (
+            !preferredContactTime &&
+            humanTimedOut && (
               <PreferredContactTime
                 onSubmit={
                   onSubmitPreferredContactTime
-                }
-              />
-            )}
-
-          {!isCollectingContact &&
-            isHumanMode &&
-            !humanConnected &&
-            humanTimedOut &&
-            preferredContactTime && (
-              <PreferredTimeSaved
-                preferredTime={
-                  preferredContactTime
                 }
               />
             )}
