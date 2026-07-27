@@ -16,6 +16,10 @@ export interface PublicSessionRecord {
   locale: Locale
   status: string
 
+  chatwootSourceId: string | null
+  chatwootContactId: number | null
+  chatwootInitializedAt: string | null
+
   metadata: {
     service?: SelectedServiceContext
     contact?: CustomerContact
@@ -37,6 +41,10 @@ interface PublicSessionRow {
   locale: Locale
   status: string
 
+  chatwoot_source_id: string | null
+  chatwoot_contact_id: string | null
+  chatwoot_initialized_at: Date | null
+
   metadata: {
     service?: SelectedServiceContext
     contact?: CustomerContact
@@ -50,6 +58,21 @@ interface PublicSessionRow {
   updated_at: Date
 }
 
+const publicSessionColumns = `
+  public_session_id,
+  conversation_id,
+  account_id,
+  inbox_id,
+  locale,
+  status,
+  metadata,
+  chatwoot_source_id,
+  chatwoot_contact_id,
+  chatwoot_initialized_at,
+  created_at,
+  updated_at
+`
+
 function mapPublicSessionRow(
   row: PublicSessionRow,
 ): PublicSessionRecord {
@@ -60,19 +83,39 @@ function mapPublicSessionRow(
     conversationId:
       row.conversation_id === null
         ? null
-        : Number(row.conversation_id),
+        : Number(
+            row.conversation_id,
+          ),
 
     accountId:
-      Number(row.account_id),
+      Number(
+        row.account_id,
+      ),
 
     inboxId:
-      Number(row.inbox_id),
+      Number(
+        row.inbox_id,
+      ),
 
     locale:
       row.locale,
 
     status:
       row.status,
+
+    chatwootSourceId:
+      row.chatwoot_source_id,
+
+    chatwootContactId:
+      row.chatwoot_contact_id === null
+        ? null
+        : Number(
+            row.chatwoot_contact_id,
+          ),
+
+    chatwootInitializedAt:
+      row.chatwoot_initialized_at
+        ?.toISOString() ?? null,
 
     metadata:
       row.metadata ?? {},
@@ -98,15 +141,7 @@ export async function createPublicSession(
         )
         VALUES ($1, $2)
         RETURNING
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
       `,
       [
         publicSessionId,
@@ -132,21 +167,79 @@ export async function findPublicSessionById(
     await databasePool.query<PublicSessionRow>(
       `
         SELECT
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
         FROM est_chat_public_sessions
         WHERE public_session_id = $1
         LIMIT 1
       `,
       [
         publicSessionId,
+      ],
+    )
+
+  const row = result.rows[0]
+
+  if (!row) {
+    return null
+  }
+
+  return mapPublicSessionRow(row)
+}
+
+export async function updatePublicSessionChatwootContact(
+  publicSessionId: string,
+  input: {
+    contactId: number
+    sourceId: string
+  },
+): Promise<PublicSessionRecord | null> {
+  const result =
+    await databasePool.query<PublicSessionRow>(
+      `
+        UPDATE est_chat_public_sessions
+        SET
+          chatwoot_contact_id = $2,
+          chatwoot_source_id = $3,
+          updated_at = now()
+        WHERE public_session_id = $1
+        RETURNING
+          ${publicSessionColumns}
+      `,
+      [
+        publicSessionId,
+        input.contactId,
+        input.sourceId,
+      ],
+    )
+
+  const row = result.rows[0]
+
+  if (!row) {
+    return null
+  }
+
+  return mapPublicSessionRow(row)
+}
+
+export async function updatePublicSessionChatwootConversation(
+  publicSessionId: string,
+  conversationId: number,
+): Promise<PublicSessionRecord | null> {
+  const result =
+    await databasePool.query<PublicSessionRow>(
+      `
+        UPDATE est_chat_public_sessions
+        SET
+          conversation_id = $2,
+          chatwoot_initialized_at = now(),
+          updated_at = now()
+        WHERE public_session_id = $1
+        RETURNING
+          ${publicSessionColumns}
+      `,
+      [
+        publicSessionId,
+        conversationId,
       ],
     )
 
@@ -169,7 +262,10 @@ export async function updatePublicSessionService(
         UPDATE est_chat_public_sessions
         SET
           metadata = jsonb_set(
-            COALESCE(metadata, '{}'::jsonb),
+            COALESCE(
+              metadata,
+              '{}'::jsonb
+            ),
             '{service}',
             $2::jsonb,
             true
@@ -177,19 +273,13 @@ export async function updatePublicSessionService(
           updated_at = now()
         WHERE public_session_id = $1
         RETURNING
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
       `,
       [
         publicSessionId,
-        JSON.stringify(service),
+        JSON.stringify(
+          service,
+        ),
       ],
     )
 
@@ -212,7 +302,10 @@ export async function updatePublicSessionContact(
         UPDATE est_chat_public_sessions
         SET
           metadata = jsonb_set(
-            COALESCE(metadata, '{}'::jsonb),
+            COALESCE(
+              metadata,
+              '{}'::jsonb
+            ),
             '{contact}',
             COALESCE(
               metadata -> 'contact',
@@ -223,19 +316,13 @@ export async function updatePublicSessionContact(
           updated_at = now()
         WHERE public_session_id = $1
         RETURNING
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
       `,
       [
         publicSessionId,
-        JSON.stringify(contact),
+        JSON.stringify(
+          contact,
+        ),
       ],
     )
 
@@ -264,13 +351,21 @@ export async function requestPublicSessionHandoff(
           status = 'handoff_pending',
 
           metadata =
-            COALESCE(metadata, '{}'::jsonb)
+            COALESCE(
+              metadata,
+              '{}'::jsonb
+            )
             ||
             jsonb_strip_nulls(
               jsonb_build_object(
-                'handoffReason', $2::text,
-                'originalQuestion', $3::text,
-                'intent', $4::text
+                'handoffReason',
+                $2::text,
+
+                'originalQuestion',
+                $3::text,
+
+                'intent',
+                $4::text
               )
             ),
 
@@ -279,21 +374,18 @@ export async function requestPublicSessionHandoff(
         WHERE public_session_id = $1
 
         RETURNING
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
       `,
       [
         publicSessionId,
-        handoff.handoffReason ?? null,
-        handoff.originalQuestion ?? null,
-        handoff.intent ?? null,
+        handoff.handoffReason ??
+          null,
+
+        handoff.originalQuestion ??
+          null,
+
+        handoff.intent ??
+          null,
       ],
     )
 
@@ -316,23 +408,20 @@ export async function updatePublicSessionPreferredContactTime(
         UPDATE est_chat_public_sessions
         SET
           metadata = jsonb_set(
-            COALESCE(metadata, '{}'::jsonb),
+            COALESCE(
+              metadata,
+              '{}'::jsonb
+            ),
             '{preferredContactTime}',
-            to_jsonb($2::text),
+            to_jsonb(
+              $2::text
+            ),
             true
           ),
           updated_at = now()
         WHERE public_session_id = $1
         RETURNING
-          public_session_id,
-          conversation_id,
-          account_id,
-          inbox_id,
-          locale,
-          status,
-          metadata,
-          created_at,
-          updated_at
+          ${publicSessionColumns}
       `,
       [
         publicSessionId,

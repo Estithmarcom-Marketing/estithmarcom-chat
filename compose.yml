@@ -17,7 +17,11 @@ services:
       - "80"
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1"
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -41,6 +45,9 @@ services:
       DATABASE_NAME: n8n
       DATABASE_USER: ${EST_CHAT_DATABASE_USER}
       DATABASE_PASSWORD: ${EST_CHAT_DATABASE_PASSWORD}
+
+      CHATWOOT_BASE_URL: ${EST_CHAT_CHATWOOT_BASE_URL}
+      CHATWOOT_API_ACCESS_TOKEN: ${EST_CHAT_CHATWOOT_API_ACCESS_TOKEN}
 
     networks:
       - backend_int
