@@ -18,6 +18,7 @@ export interface PublicSessionRecord {
 
   chatwootSourceId: string | null
   chatwootContactId: number | null
+  chatwootAuthToken: string | null
   chatwootInitializedAt: string | null
 
   metadata: {
@@ -43,6 +44,7 @@ interface PublicSessionRow {
 
   chatwoot_source_id: string | null
   chatwoot_contact_id: string | null
+  chatwoot_auth_token: string | null
   chatwoot_initialized_at: Date | null
 
   metadata: {
@@ -68,6 +70,7 @@ const publicSessionColumns = `
   metadata,
   chatwoot_source_id,
   chatwoot_contact_id,
+  chatwoot_auth_token,
   chatwoot_initialized_at,
   created_at,
   updated_at
@@ -112,6 +115,9 @@ function mapPublicSessionRow(
         : Number(
             row.chatwoot_contact_id,
           ),
+
+    chatwootAuthToken:
+      row.chatwoot_auth_token,
 
     chatwootInitializedAt:
       row.chatwoot_initialized_at
@@ -186,11 +192,12 @@ export async function findPublicSessionById(
   return mapPublicSessionRow(row)
 }
 
-export async function updatePublicSessionChatwootContact(
+export async function updatePublicSessionChatwootWidget(
   publicSessionId: string,
   input: {
     contactId: number
     sourceId: string
+    authToken: string
   },
 ): Promise<PublicSessionRecord | null> {
   const result =
@@ -200,6 +207,8 @@ export async function updatePublicSessionChatwootContact(
         SET
           chatwoot_contact_id = $2,
           chatwoot_source_id = $3,
+          chatwoot_auth_token = $4,
+          chatwoot_initialized_at = now(),
           updated_at = now()
         WHERE public_session_id = $1
         RETURNING
@@ -209,6 +218,7 @@ export async function updatePublicSessionChatwootContact(
         publicSessionId,
         input.contactId,
         input.sourceId,
+        input.authToken,
       ],
     )
 
@@ -231,7 +241,6 @@ export async function updatePublicSessionChatwootConversation(
         UPDATE est_chat_public_sessions
         SET
           conversation_id = $2,
-          chatwoot_initialized_at = now(),
           updated_at = now()
         WHERE public_session_id = $1
         RETURNING

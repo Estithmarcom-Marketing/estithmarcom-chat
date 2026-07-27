@@ -35,6 +35,11 @@ export const chatwootConfig = {
       'CHATWOOT_API_ACCESS_TOKEN',
     ),
 
+  websiteToken:
+    requireEnvironmentVariable(
+      'CHATWOOT_WEBSITE_TOKEN',
+    ),
+
   requestTimeoutMs:
     10_000,
 }

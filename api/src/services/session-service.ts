@@ -3,14 +3,12 @@ import {
 } from 'node:crypto'
 
 import {
-  createChatwootContact,
-  createChatwootConversation,
+  initializeChatwootWidget,
 } from '../clients/chatwoot-client.js'
 
 import {
   createPublicSession,
-  updatePublicSessionChatwootContact,
-  updatePublicSessionChatwootConversation,
+  updatePublicSessionChatwootWidget,
 } from '../repositories/public-session-repository.js'
 
 import type {
@@ -30,53 +28,20 @@ export async function createSession(
       locale,
     )
 
-  const chatwootContact =
-    await createChatwootContact({
-      publicSessionId,
-
-      accountId:
-        session.accountId,
-
-      inboxId:
-        session.inboxId,
-    })
-
-  const sessionWithContact =
-    await updatePublicSessionChatwootContact(
-      publicSessionId,
-      chatwootContact,
+  const chatwootWidget =
+    await initializeChatwootWidget(
+      session.inboxId,
     )
-
-  if (!sessionWithContact) {
-    throw new Error(
-      'Failed to persist Chatwoot contact mapping',
-    )
-  }
-
-  const chatwootConversation =
-    await createChatwootConversation({
-      accountId:
-        session.accountId,
-
-      inboxId:
-        session.inboxId,
-
-      contactId:
-        chatwootContact.contactId,
-
-      sourceId:
-        chatwootContact.sourceId,
-    })
 
   const initializedSession =
-    await updatePublicSessionChatwootConversation(
+    await updatePublicSessionChatwootWidget(
       publicSessionId,
-      chatwootConversation.conversationId,
+      chatwootWidget,
     )
 
   if (!initializedSession) {
     throw new Error(
-      'Failed to persist Chatwoot conversation mapping',
+      'Failed to persist Chatwoot widget session mapping',
     )
   }
 

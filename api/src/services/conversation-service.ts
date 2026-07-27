@@ -1,10 +1,11 @@
 import {
-  randomUUID,
-} from 'node:crypto'
+  createChatwootWidgetMessage,
+} from '../clients/chatwoot-client.js'
 
 import {
   findPublicSessionById,
   requestPublicSessionHandoff,
+  updatePublicSessionChatwootConversation,
   updatePublicSessionContact,
   updatePublicSessionPreferredContactTime,
   updatePublicSessionService,
@@ -109,18 +110,61 @@ export async function createCustomerMessage(
     return null
   }
 
+  const authToken =
+    session.chatwootAuthToken
+
+  if (!authToken) {
+    throw new Error(
+      'Chatwoot widget session is not initialized',
+    )
+  }
+
+  const content =
+    input.content.trim()
+
+  const chatwootMessage =
+    await createChatwootWidgetMessage({
+      authToken,
+      content,
+    })
+
+  if (
+    session.conversationId === null
+  ) {
+    const updatedSession =
+      await updatePublicSessionChatwootConversation(
+        input.publicSessionId,
+        chatwootMessage.conversationId,
+      )
+
+    if (!updatedSession) {
+      throw new Error(
+        'Failed to persist Chatwoot conversation mapping',
+      )
+    }
+  } else if (
+    session.conversationId !==
+    chatwootMessage.conversationId
+  ) {
+    throw new Error(
+      'Chatwoot conversation mapping mismatch',
+    )
+  }
+
   return {
     id:
-      randomUUID(),
+      String(
+        chatwootMessage.messageId,
+      ),
 
     author:
       'customer',
 
     content:
-      input.content.trim(),
+      chatwootMessage.content,
 
     createdAt:
-      new Date().toISOString(),
+      chatwootMessage.createdAt,
 
     status:
       'sent',

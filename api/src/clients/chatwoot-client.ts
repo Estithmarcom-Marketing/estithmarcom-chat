@@ -2,50 +2,45 @@ import {
   chatwootConfig,
 } from '../config/chatwoot.js'
 
-interface ChatwootContactInbox {
-  source_id?: string
+interface ChatwootWidgetConfigResponse {
+  website_channel_config?: {
+    auth_token?: string
+    website_token?: string
+  }
 
-  inbox?: {
+  contact?: {
     id?: number
+    pubsub_token?: string
   }
 }
 
-interface ChatwootContact {
-  id?: number
-  identifier?: string
-
-  contact_inboxes?: ChatwootContactInbox[]
-}
-
-interface ChatwootCreateContactPayload {
-  contact?: ChatwootContact
-
-  contact_inbox?: {
-    inbox?: {
-      id?: number
-    }
-
-    source_id?: string
-  }
-}
-
-interface ChatwootCreateContactResponse {
-  payload?: ChatwootCreateContactPayload
-}
-
-interface ChatwootCreateConversationResponse {
-  id?: number
-  account_id?: number
+interface ChatwootWidgetTokenPayload {
+  source_id?: string
   inbox_id?: number
+  exp?: number
+  iat?: number
 }
 
-export interface CreatedChatwootContact {
+interface ChatwootWidgetMessageResponse {
+  id?: number
+  content?: string
+  message_type?: number
+  content_type?: string
+  created_at?: number
+  conversation_id?: number
+}
+
+export interface InitializedChatwootWidget {
   contactId: number
   sourceId: string
+  authToken: string
 }
 
-export interface CreatedChatwootConversation {
+export interface CreatedChatwootMessage {
+  messageId: number
   conversationId: number
+  content: string
+  createdAt: string
 }
 
 function isPositiveInteger(
@@ -56,6 +51,16 @@ function isPositiveInteger(
     Number.isInteger(value) &&
     value > 0
   )
+}
+
+async function readErrorResponse(
+  response: Response,
+): Promise<string> {
+  try {
+    return await response.text()
+  } catch {
+    return ''
+  }
 }
 
 async function chatwootRequest<T>(
@@ -87,9 +92,6 @@ async function chatwootRequest<T>(
             'Content-Type':
               'application/json',
 
-            api_access_token:
-              chatwootConfig.apiAccessToken,
-
             ...init.headers,
           },
         },
@@ -97,7 +99,9 @@ async function chatwootRequest<T>(
 
     if (!response.ok) {
       const responseBody =
-        await response.text()
+        await readErrorResponse(
+          response,
+        )
 
       throw new Error(
         `Chatwoot API request failed with status ${response.status}: ${responseBody}`,
@@ -110,39 +114,80 @@ async function chatwootRequest<T>(
   }
 }
 
-export async function createChatwootContact(
-  input: {
-    publicSessionId: string
-    accountId: number
-    inboxId: number
-  },
-): Promise<CreatedChatwootContact> {
+function decodeWidgetToken(
+  token: string,
+): ChatwootWidgetTokenPayload {
+  const parts =
+    token.split('.')
+
+  if (parts.length !== 3) {
+    throw new Error(
+      'Chatwoot returned an invalid widget auth token',
+    )
+  }
+
+  const payloadPart =
+    parts[1]
+
+  if (!payloadPart) {
+    throw new Error(
+      'Chatwoot widget auth token has no payload',
+    )
+  }
+
+  try {
+    const payload =
+      Buffer
+        .from(
+          payloadPart,
+          'base64url',
+        )
+        .toString(
+          'utf8',
+        )
+
+    return JSON.parse(
+      payload,
+    ) as ChatwootWidgetTokenPayload
+  } catch {
+    throw new Error(
+      'Unable to decode Chatwoot widget auth token',
+    )
+  }
+}
+
+export async function initializeChatwootWidget(
+  expectedInboxId: number,
+): Promise<InitializedChatwootWidget> {
   const response =
-    await chatwootRequest<ChatwootCreateContactResponse>(
-      `/api/v1/accounts/${input.accountId}/contacts`,
+    await chatwootRequest<ChatwootWidgetConfigResponse>(
+      '/api/v1/widget/config',
       {
         method:
           'POST',
 
         body:
           JSON.stringify({
-            inbox_id:
-              input.inboxId,
-
-            identifier:
-              `est-chat:${input.publicSessionId}`,
+            website_token:
+              chatwootConfig.websiteToken,
           }),
       },
     )
 
-  const contact =
-    response.payload?.contact
+  const authToken =
+    response
+      .website_channel_config
+      ?.auth_token
+      ?.trim()
 
-  const contactInbox =
-    response.payload?.contact_inbox
+  if (!authToken) {
+    throw new Error(
+      'Chatwoot did not return a widget auth token',
+    )
+  }
 
   const contactId =
-    contact?.id
+    response.contact?.id
 
   if (
     !isPositiveInteger(
@@ -150,70 +195,69 @@ export async function createChatwootContact(
     )
   ) {
     throw new Error(
-      'Chatwoot did not return a valid contact id',
+      'Chatwoot did not return a valid widget contact id',
     )
   }
 
-  const directSourceId =
-    contactInbox
-      ?.source_id
-      ?.trim()
-
-  const nestedSourceId =
-    contact
-      ?.contact_inboxes
-      ?.find(
-        (item) =>
-          item.inbox?.id ===
-          input.inboxId,
-      )
-      ?.source_id
-      ?.trim()
+  const tokenPayload =
+    decodeWidgetToken(
+      authToken,
+    )
 
   const sourceId =
-    directSourceId ||
-    nestedSourceId
+    tokenPayload
+      .source_id
+      ?.trim()
 
   if (!sourceId) {
     throw new Error(
-      'Chatwoot did not return a source id for the requested inbox',
+      'Chatwoot widget auth token does not contain source_id',
+    )
+  }
+
+  if (
+    tokenPayload.inbox_id !==
+    expectedInboxId
+  ) {
+    throw new Error(
+      'Chatwoot widget token inbox does not match public session inbox',
     )
   }
 
   return {
     contactId,
     sourceId,
+    authToken,
   }
 }
 
-export async function createChatwootConversation(
+export async function createChatwootWidgetMessage(
   input: {
-    accountId: number
-    inboxId: number
-    contactId: number
-    sourceId: string
+    authToken: string
+    content: string
   },
-): Promise<CreatedChatwootConversation> {
+): Promise<CreatedChatwootMessage> {
   const response =
-    await chatwootRequest<ChatwootCreateConversationResponse>(
-      `/api/v1/accounts/${input.accountId}/conversations`,
+    await chatwootRequest<ChatwootWidgetMessageResponse>(
+      '/api/v1/widget/messages',
       {
         method:
           'POST',
 
+        headers: {
+          'X-Auth-Token':
+            input.authToken,
+        },
+
         body:
           JSON.stringify({
-            source_id:
-              input.sourceId,
+            website_token:
+              chatwootConfig.websiteToken,
 
-            inbox_id:
-              input.inboxId,
-
-            contact_id:
-              input.contactId,
-
-            status:
-              'open',
+            message: {
+              content:
+                input.content,
+            },
           }),
       },
     )
@@ -224,12 +268,46 @@ export async function createChatwootConversation(
     )
   ) {
     throw new Error(
+      'Chatwoot did not return a valid message id',
+    )
+  }
+
+  if (
+    !isPositiveInteger(
+      response.conversation_id,
+    )
+  ) {
+    throw new Error(
       'Chatwoot did not return a valid conversation id',
     )
   }
 
+  if (
+    typeof response.created_at !==
+      'number' ||
+    !Number.isFinite(
+      response.created_at,
+    )
+  ) {
+    throw new Error(
+      'Chatwoot did not return a valid message creation time',
+    )
+  }
+
   return {
-    conversationId:
+    messageId:
       response.id,
+
+    conversationId:
+      response.conversation_id,
+
+    content:
+      response.content ??
+      input.content,
+
+    createdAt:
+      new Date(
+        response.created_at * 1000,
+      ).toISOString(),
   }
 }
