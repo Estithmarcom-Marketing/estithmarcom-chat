@@ -4,6 +4,7 @@ import {
 
 import {
   findPublicSessionById,
+  updatePublicSessionContact,
   updatePublicSessionService,
 } from '../repositories/public-session-repository.js'
 
@@ -13,6 +14,7 @@ import type {
   ConversationContext,
   LoadConversationResult,
   SendCustomerMessageInput,
+  UpdateContactInput,
   UpdateServiceInput,
 } from '../types/chat.js'
 
@@ -49,7 +51,8 @@ function buildConversationContext(
         session.status,
       ),
 
-    contact: {},
+    contact:
+      session.metadata.contact ?? {},
 
     service:
       session.metadata.service ?? {},
@@ -115,6 +118,24 @@ export async function updateConversationService(
     await updatePublicSessionService(
       input.publicSessionId,
       input.service,
+    )
+
+  if (!updatedSession) {
+    return null
+  }
+
+  return buildConversationContext(
+    updatedSession,
+  )
+}
+
+export async function updateConversationContact(
+  input: UpdateContactInput,
+): Promise<ConversationContext | null> {
+  const updatedSession =
+    await updatePublicSessionContact(
+      input.publicSessionId,
+      input.contact,
     )
 
   if (!updatedSession) {

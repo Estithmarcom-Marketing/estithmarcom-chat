@@ -3,6 +3,7 @@ import {
 } from '../config/database.js'
 
 import type {
+  CustomerContact,
   Locale,
   SelectedServiceContext,
 } from '../types/chat.js'
@@ -14,9 +15,12 @@ export interface PublicSessionRecord {
   inboxId: number
   locale: Locale
   status: string
+
   metadata: {
     service?: SelectedServiceContext
+    contact?: CustomerContact
   }
+
   createdAt: string
   updatedAt: string
 }
@@ -28,9 +32,12 @@ interface PublicSessionRow {
   inbox_id: string
   locale: Locale
   status: string
+
   metadata: {
     service?: SelectedServiceContext
+    contact?: CustomerContact
   }
+
   created_at: Date
   updated_at: Date
 }
@@ -175,6 +182,52 @@ export async function updatePublicSessionService(
       [
         publicSessionId,
         JSON.stringify(service),
+      ],
+    )
+
+  const row = result.rows[0]
+
+  if (!row) {
+    return null
+  }
+
+  return mapPublicSessionRow(row)
+}
+
+export async function updatePublicSessionContact(
+  publicSessionId: string,
+  contact: Partial<CustomerContact>,
+): Promise<PublicSessionRecord | null> {
+  const result =
+    await databasePool.query<PublicSessionRow>(
+      `
+        UPDATE est_chat_public_sessions
+        SET
+          metadata = jsonb_set(
+            COALESCE(metadata, '{}'::jsonb),
+            '{contact}',
+            COALESCE(
+              metadata -> 'contact',
+              '{}'::jsonb
+            ) || $2::jsonb,
+            true
+          ),
+          updated_at = now()
+        WHERE public_session_id = $1
+        RETURNING
+          public_session_id,
+          conversation_id,
+          account_id,
+          inbox_id,
+          locale,
+          status,
+          metadata,
+          created_at,
+          updated_at
+      `,
+      [
+        publicSessionId,
+        JSON.stringify(contact),
       ],
     )
 

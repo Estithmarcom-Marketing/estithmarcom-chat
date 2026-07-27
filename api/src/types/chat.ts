@@ -79,3 +79,8 @@ export interface UpdateServiceInput {
     serviceName: string
   }
 }
+
+export interface UpdateContactInput {
+  publicSessionId: string
+  contact: Partial<CustomerContact>
+}
