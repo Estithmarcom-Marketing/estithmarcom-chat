@@ -1,10 +1,16 @@
 import {
+  randomUUID,
+} from 'node:crypto'
+
+import {
   findPublicSessionById,
 } from '../repositories/public-session-repository.js'
 
 import type {
+  ChatMessage,
   ChatMode,
   LoadConversationResult,
+  SendCustomerMessageInput,
 } from '../types/chat.js'
 
 function mapSessionStatusToChatMode(
@@ -51,5 +57,35 @@ export async function loadConversation(
     },
 
     messages: [],
+  }
+}
+
+export async function createCustomerMessage(
+  input: SendCustomerMessageInput,
+): Promise<ChatMessage | null> {
+  const session =
+    await findPublicSessionById(
+      input.publicSessionId,
+    )
+
+  if (!session) {
+    return null
+  }
+
+  return {
+    id:
+      randomUUID(),
+
+    author:
+      'customer',
+
+    content:
+      input.content.trim(),
+
+    createdAt:
+      new Date().toISOString(),
+
+    status:
+      'sent',
   }
 }

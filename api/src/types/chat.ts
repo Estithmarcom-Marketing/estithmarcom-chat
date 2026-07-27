@@ -62,3 +62,8 @@ export interface LoadConversationResult {
   context: ConversationContext
   messages: ChatMessage[]
 }
+
+export interface SendCustomerMessageInput {
+  publicSessionId: string
+  content: string
+}
