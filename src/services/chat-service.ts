@@ -21,9 +21,22 @@ export interface SendMessageInput {
 
 export interface SelectServiceInput {
   conversationId?: string
+
   categoryId: string
+  categoryName: string
+
   platformId: string
+  platformName: string
+
   serviceId: string
+  serviceName: string
+}
+
+export interface RequestSpecialistInput {
+  conversationId?: string
+  handoffReason?: string
+  originalQuestion?: string
+  intent?: string
 }
 
 export interface UpdateContactInput {
@@ -37,7 +50,8 @@ export interface PreferredContactTimeInput {
 }
 
 export interface ChatService {
-  startSession(): Promise<StartSessionResult>
+  startSession():
+    Promise<StartSessionResult>
 
   loadConversation(
     conversationId: string,
@@ -52,7 +66,7 @@ export interface ChatService {
   ): Promise<ConversationContext>
 
   requestSpecialist(
-    conversationId?: string,
+    input: RequestSpecialistInput,
   ): Promise<ConversationContext>
 
   updateContact(

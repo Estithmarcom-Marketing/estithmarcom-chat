@@ -15,20 +15,19 @@ export function ChatHeader({
   onMinimize,
   onClose,
 }: ChatHeaderProps) {
-  const isAssistant =
-    mode === 'assistant'
-
   const title =
-    isAssistant
+    mode === 'assistant'
       ? 'مساعد استثماركوم'
       : 'فريق استثماركوم'
 
   const status =
-    isAssistant
+    mode === 'assistant'
       ? 'جاهز لمساعدتك'
-      : humanConnected
-        ? 'مختص متصل'
-        : 'تم تحويل طلبك'
+      : mode === 'handoff_pending'
+        ? 'جاري توصيلك بالمختص'
+        : humanConnected
+          ? 'مختص متصل'
+          : 'تم تحويل طلبك'
 
   return (
     <header className="chat-header">

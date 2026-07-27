@@ -4,6 +4,7 @@ export type {
   LoadConversationResult,
   SendMessageInput,
   SelectServiceInput,
+  RequestSpecialistInput,
   UpdateContactInput,
   PreferredContactTimeInput,
 } from './chat-service'

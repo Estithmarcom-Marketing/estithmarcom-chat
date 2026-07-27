@@ -40,14 +40,22 @@ const categoryNames: Record<string, string> = {
 }
 
 const platformNames: Record<string, string> = {
-  muqeem: 'مقيم',
+  muqeem:
+    'مقيم',
 }
 
 const serviceNames: Record<string, string> = {
-  'issue-residency': 'إصدار إقامة',
-  'renew-residency': 'تجديد إقامة',
-  'exit-reentry': 'تأشيرة خروج وعودة',
-  'final-exit': 'خروج نهائي',
+  'issue-residency':
+    'إصدار إقامة',
+
+  'renew-residency':
+    'تجديد إقامة',
+
+  'exit-reentry':
+    'تأشيرة خروج وعودة',
+
+  'final-exit':
+    'خروج نهائي',
 }
 
 interface ChatWidgetProps {
@@ -142,13 +150,17 @@ export function ChatWidget({
 
   const showMuqeemServices =
     navigation.screen === 'services' &&
-    navigation.platformId === 'muqeem'
+    navigation.platformId ===
+      'muqeem'
 
   const showServiceDetail =
     navigation.screen ===
       'service-detail' &&
-    navigation.platformId === 'muqeem' &&
-    Boolean(navigation.serviceId)
+    navigation.platformId ===
+      'muqeem' &&
+    Boolean(
+      navigation.serviceId,
+    )
 
   const selectedServiceName =
     navigation.serviceId
@@ -164,13 +176,17 @@ export function ChatWidget({
     mode === 'human'
 
   const isCollectingContact =
-    Boolean(missingContactField)
+    Boolean(
+      missingContactField,
+    )
 
   function handleSelectService(
     serviceId: string,
   ) {
     dispatchNavigation({
-      type: 'SELECT_SERVICE',
+      type:
+        'SELECT_SERVICE',
+
       serviceId,
     })
 
@@ -181,11 +197,29 @@ export function ChatWidget({
       navigation.platformId
 
     const serviceName =
-      serviceNames[serviceId]
+      serviceNames[
+        serviceId
+      ]
+
+    const categoryName =
+      categoryId
+        ? categoryNames[
+            categoryId
+          ]
+        : undefined
+
+    const platformName =
+      platformId
+        ? platformNames[
+            platformId
+          ]
+        : undefined
 
     if (
       !categoryId ||
+      !categoryName ||
       !platformId ||
+      !platformName ||
       !serviceName
     ) {
       return
@@ -193,13 +227,9 @@ export function ChatWidget({
 
     onSelectService({
       categoryId,
-      categoryName:
-        categoryNames[categoryId],
-
+      categoryName,
       platformId,
-      platformName:
-        platformNames[platformId],
-
+      platformName,
       serviceId,
       serviceName,
     })
@@ -245,7 +275,7 @@ export function ChatWidget({
             isHandoffPending &&
             !humanTimedOut && (
               <HandoffSystemCard
-                variant="handoff-complete"
+                variant="waiting"
               />
             )}
 
@@ -275,7 +305,7 @@ export function ChatWidget({
             isHumanMode &&
             !humanConnected && (
               <HandoffSystemCard
-                variant="waiting"
+                variant="handoff-complete"
               />
             )}
 
@@ -284,11 +314,11 @@ export function ChatWidget({
             humanConnected && (
               <div className="human-connected-card">
                 <strong>
-                  تم اتصال المختص بالمحادثة
+                  مختص متصل بالمحادثة
                 </strong>
 
                 <p>
-                  يمكنك متابعة المحادثة هنا مباشرة.
+                  يمكنك متابعة المحادثة مع الفريق هنا مباشرة.
                 </p>
               </div>
             )}
@@ -307,6 +337,7 @@ export function ChatWidget({
                     dispatchNavigation({
                       type:
                         'SELECT_CATEGORY',
+
                       categoryId,
                     })
                   }}
@@ -321,7 +352,8 @@ export function ChatWidget({
               <PlatformScreen
                 onBackHome={() => {
                   dispatchNavigation({
-                    type: 'RESET',
+                    type:
+                      'RESET',
                   })
                 }}
                 onSelectPlatform={(
@@ -330,6 +362,7 @@ export function ChatWidget({
                   dispatchNavigation({
                     type:
                       'SELECT_PLATFORM',
+
                     platformId,
                   })
                 }}
@@ -343,12 +376,14 @@ export function ChatWidget({
               <ServiceListScreen
                 onHome={() => {
                   dispatchNavigation({
-                    type: 'RESET',
+                    type:
+                      'RESET',
                   })
                 }}
                 onBackToPlatforms={() => {
                   dispatchNavigation({
-                    type: 'BACK',
+                    type:
+                      'BACK',
                   })
                 }}
                 onSelectService={
@@ -369,12 +404,14 @@ export function ChatWidget({
                 platformName="مقيم"
                 onHome={() => {
                   dispatchNavigation({
-                    type: 'RESET',
+                    type:
+                      'RESET',
                   })
                 }}
                 onBackToServices={() => {
                   dispatchNavigation({
-                    type: 'BACK',
+                    type:
+                      'BACK',
                   })
                 }}
                 onRequestSpecialist={

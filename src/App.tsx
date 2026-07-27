@@ -24,16 +24,14 @@ import {
 } from './state'
 
 import {
+  clearConversationId,
   loadConversationId,
   saveConversationId,
 } from './services'
 
 import {
-  connectMockHuman,
-  createMockAssistantReply,
-  createMockHumanReply,
-  createMockSystemMessage,
-  mockChatService,
+  apiChatService,
+  isConversationNotFoundError,
 } from './integrations'
 
 function getMissingContactField(
@@ -60,23 +58,12 @@ function App() {
   )
 
   const [
-    humanConnected,
-    setHumanConnected,
+    specialistRequested,
+    setSpecialistRequested,
   ] = useState(false)
 
   const [
     humanTimedOut,
-    setHumanTimedOut,
-  ] = useState(false)
-
-  const [
-    preferredContactTime,
-    setPreferredContactTime,
-  ] = useState<string>()
-
-  const [
-    specialistRequested,
-    setSpecialistRequested,
   ] = useState(false)
 
   const [
@@ -87,80 +74,289 @@ function App() {
   const missingContactField =
     specialistRequested
       ? getMissingContactField(
-          state.context?.contact ?? {},
+          state.context?.contact ??
+            {},
         )
       : undefined
 
+  const humanConnected =
+    state.messages.some(
+      (message) =>
+        message.author ===
+        'human',
+    )
+
   useEffect(() => {
+    let cancelled =
+      false
+
     async function bootstrap() {
       dispatch({
-        type: 'SET_LOADING',
-        payload: true,
+        type:
+          'SET_LOADING',
+
+        payload:
+          true,
       })
 
-      const existingConversationId =
-        loadConversationId()
+      dispatch({
+        type:
+          'SET_CONNECTION_STATUS',
 
-      const result =
-        existingConversationId
-          ? await mockChatService.loadConversation(
-              existingConversationId,
-            )
-          : await mockChatService.startSession()
+        payload:
+          'connecting',
+      })
 
-      if (
-        result.context.conversationId
-      ) {
-        saveConversationId(
-          result.context.conversationId,
+      try {
+        const existingConversationId =
+          loadConversationId()
+
+        let result
+
+        if (
+          existingConversationId
+        ) {
+          try {
+            result =
+              await apiChatService.loadConversation(
+                existingConversationId,
+              )
+          } catch (error) {
+            if (
+              !isConversationNotFoundError(
+                error,
+              )
+            ) {
+              throw error
+            }
+
+            clearConversationId()
+
+            result =
+              await apiChatService.startSession()
+          }
+        } else {
+          result =
+            await apiChatService.startSession()
+        }
+
+        if (cancelled) {
+          return
+        }
+
+        if (
+          result.context
+            .conversationId
+        ) {
+          saveConversationId(
+            result.context
+              .conversationId,
+          )
+        }
+
+        dispatch({
+          type:
+            'SET_CONTEXT',
+
+          payload:
+            result.context,
+        })
+
+        dispatch({
+          type:
+            'SET_MESSAGES',
+
+          payload:
+            result.messages,
+        })
+
+        dispatch({
+          type:
+            'SET_CONNECTION_STATUS',
+
+          payload:
+            'connected',
+        })
+      } catch (error) {
+        console.error(
+          'Failed to bootstrap chat',
+          error,
         )
+
+        if (!cancelled) {
+          dispatch({
+            type:
+              'SET_CONNECTION_STATUS',
+
+            payload:
+              'disconnected',
+          })
+        }
+      } finally {
+        if (!cancelled) {
+          dispatch({
+            type:
+              'SET_LOADING',
+
+            payload:
+              false,
+          })
+        }
       }
-
-      dispatch({
-        type: 'SET_CONTEXT',
-        payload: result.context,
-      })
-
-      dispatch({
-        type: 'SET_MESSAGES',
-        payload: result.messages,
-      })
-
-      dispatch({
-        type: 'SET_LOADING',
-        payload: false,
-      })
     }
 
     void bootstrap()
+
+    return () => {
+      cancelled =
+        true
+    }
   }, [])
+
+  useEffect(() => {
+    const conversationId =
+      state.context
+        ?.conversationId
+
+    if (!conversationId) {
+      return
+    }
+
+    const activeConversationId =
+      conversationId
+
+    let stopped =
+      false
+
+    let loading =
+      false
+
+    async function refreshConversation() {
+      if (
+        stopped ||
+        loading
+      ) {
+        return
+      }
+
+      loading =
+        true
+
+      try {
+        const result =
+          await apiChatService.loadConversation(
+            activeConversationId,
+          )
+
+        if (stopped) {
+          return
+        }
+
+        dispatch({
+          type:
+            'SET_CONTEXT',
+
+          payload:
+            result.context,
+        })
+
+        dispatch({
+          type:
+            'SET_MESSAGES',
+
+          payload:
+            result.messages,
+        })
+
+        dispatch({
+          type:
+            'SET_CONNECTION_STATUS',
+
+          payload:
+            'connected',
+        })
+      } catch (error) {
+        console.error(
+          'Failed to refresh conversation',
+          error,
+        )
+
+        if (!stopped) {
+          dispatch({
+            type:
+              'SET_CONNECTION_STATUS',
+
+            payload:
+              'reconnecting',
+          })
+        }
+      } finally {
+        loading =
+          false
+      }
+    }
+
+    const timer =
+      window.setInterval(
+        () => {
+          void refreshConversation()
+        },
+        2500,
+      )
+
+    return () => {
+      stopped =
+        true
+
+      window.clearInterval(
+        timer,
+      )
+    }
+  }, [
+    state.context
+      ?.conversationId,
+  ])
 
   async function handleSendMessage(
     content: string,
   ) {
-    const message =
-      await mockChatService.sendMessage({
-        conversationId:
-          state.context?.conversationId,
-        content,
-      })
+    try {
+      const message =
+        await apiChatService.sendMessage({
+          conversationId:
+            state.context
+              ?.conversationId,
 
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: message,
-    })
-
-    if (
-      state.context?.mode === 'assistant'
-    ) {
-      const assistantReply =
-        createMockAssistantReply(
-          'فهمت طلبك. سأساعدك في الوصول للخدمة المناسبة.',
-        )
+          content,
+        })
 
       dispatch({
-        type: 'ADD_MESSAGE',
-        payload: assistantReply,
+        type:
+          'ADD_MESSAGE',
+
+        payload:
+          message,
+      })
+
+      dispatch({
+        type:
+          'SET_CONNECTION_STATUS',
+
+        payload:
+          'connected',
+      })
+    } catch (error) {
+      console.error(
+        'Failed to send message',
+        error,
+      )
+
+      dispatch({
+        type:
+          'SET_CONNECTION_STATUS',
+
+        payload:
+          'disconnected',
       })
     }
   }
@@ -170,34 +366,21 @@ function App() {
   ) {
     if (
       !service.categoryId ||
+      !service.categoryName ||
       !service.platformId ||
-      !service.serviceId
+      !service.platformName ||
+      !service.serviceId ||
+      !service.serviceName
     ) {
       return
     }
 
-    const updatedContext =
-      await mockChatService.selectService({
-        conversationId:
-          state.context?.conversationId,
-
-        categoryId:
-          service.categoryId,
-
-        platformId:
-          service.platformId,
-
-        serviceId:
-          service.serviceId,
-      })
-
-    dispatch({
-      type: 'SET_CONTEXT',
-      payload: {
-        ...updatedContext,
-
-        service: {
-          ...updatedContext.service,
+    try {
+      const updatedContext =
+        await apiChatService.selectService({
+          conversationId:
+            state.context
+              ?.conversationId,
 
           categoryId:
             service.categoryId,
@@ -216,38 +399,64 @@ function App() {
 
           serviceName:
             service.serviceName,
-        },
-      },
-    })
+        })
+
+      dispatch({
+        type:
+          'SET_CONTEXT',
+
+        payload:
+          updatedContext,
+      })
+    } catch (error) {
+      console.error(
+        'Failed to select service',
+        error,
+      )
+    }
   }
 
-  async function completeMockHandoff() {
+  async function completeHandoff() {
+    if (
+      state.context?.mode !==
+      'assistant'
+    ) {
+      return
+    }
+
     const context =
-      await mockChatService.requestSpecialist(
-        state.context?.conversationId,
-      )
+      await apiChatService.requestSpecialist({
+        conversationId:
+          state.context
+            ?.conversationId,
+
+        handoffReason:
+          'طلب العميل التحدث مع موظف مختص',
+
+        originalQuestion:
+          'أريد التحدث مع موظف مختص',
+
+        intent:
+          'human_handoff',
+      })
 
     dispatch({
-      type: 'SET_CONTEXT',
-      payload: context,
-    })
+      type:
+        'SET_CONTEXT',
 
-    const systemMessage =
-      createMockSystemMessage(
-        'تم تحويل طلبك إلى فريق استثماركوم.',
-      )
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: systemMessage,
+      payload:
+        context,
     })
   }
 
   async function handleRequestSpecialist() {
-    setSpecialistRequested(true)
+    setSpecialistRequested(
+      true,
+    )
 
     const currentContact =
-      state.context?.contact ?? {}
+      state.context?.contact ??
+      {}
 
     const missingField =
       getMissingContactField(
@@ -255,7 +464,14 @@ function App() {
       )
 
     if (!missingField) {
-      await completeMockHandoff()
+      try {
+        await completeHandoff()
+      } catch (error) {
+        console.error(
+          'Failed to request specialist',
+          error,
+        )
+      }
     }
   }
 
@@ -263,60 +479,71 @@ function App() {
     field: ContactField,
     value: string,
   ) {
-    const updatedContext =
-      await mockChatService.updateContact({
-        conversationId:
-          state.context?.conversationId,
+    try {
+      const updatedContext =
+        await apiChatService.updateContact({
+          conversationId:
+            state.context
+              ?.conversationId,
 
-        contact: {
-          [field]: value,
-        },
+          contact: {
+            [field]:
+              value,
+          },
+        })
+
+      dispatch({
+        type:
+          'SET_CONTEXT',
+
+        payload:
+          updatedContext,
       })
 
-    dispatch({
-      type: 'SET_CONTEXT',
-      payload: updatedContext,
-    })
+      const nextMissingField =
+        getMissingContactField(
+          updatedContext.contact,
+        )
 
-    const nextMissingField =
-      getMissingContactField(
-        updatedContext.contact,
+      if (!nextMissingField) {
+        await completeHandoff()
+      }
+    } catch (error) {
+      console.error(
+        'Failed to update contact',
+        error,
       )
-
-    if (!nextMissingField) {
-      await completeMockHandoff()
     }
   }
 
-  function handlePreferredContactTime(
+  async function handlePreferredContactTime(
     preferredTime: string,
   ) {
-    setPreferredContactTime(
-      preferredTime,
-    )
-  }
+    try {
+      const updatedContext =
+        await apiChatService
+          .submitPreferredContactTime({
+            conversationId:
+              state.context
+                ?.conversationId,
 
-  function handleMockHumanReply() {
-    const context =
-      connectMockHuman()
+            preferredContactTime:
+              preferredTime,
+          })
 
-    setHumanConnected(true)
-    setHumanTimedOut(false)
+      dispatch({
+        type:
+          'SET_CONTEXT',
 
-    dispatch({
-      type: 'SET_CONTEXT',
-      payload: context,
-    })
-
-    const reply =
-      createMockHumanReply(
-        'أهلًا بك، معك أحد مختصي استثماركوم. كيف أقدر أساعدك؟',
+        payload:
+          updatedContext,
+      })
+    } catch (error) {
+      console.error(
+        'Failed to save preferred contact time',
+        error,
       )
-
-    dispatch({
-      type: 'ADD_MESSAGE',
-      payload: reply,
-    })
+    }
   }
 
   if (showSystemStatesQA) {
@@ -326,7 +553,9 @@ function App() {
           type="button"
           className="system-states-page__back"
           onClick={() =>
-            setShowSystemStatesQA(false)
+            setShowSystemStatesQA(
+              false,
+            )
           }
         >
           العودة إلى الشات
@@ -340,8 +569,12 @@ function App() {
   return (
     <main className="app-shell">
       <ChatWidget
-        isOpen={state.isOpen}
-        isMinimized={state.isMinimized}
+        isOpen={
+          state.isOpen
+        }
+        isMinimized={
+          state.isMinimized
+        }
         mode={
           state.context?.mode ??
           'assistant'
@@ -353,37 +586,48 @@ function App() {
           humanTimedOut
         }
         preferredContactTime={
-          preferredContactTime
+          state.context
+            ?.preferredContactTime
         }
         missingContactField={
           missingContactField
         }
-        messages={state.messages}
+        messages={
+          state.messages
+        }
         onOpen={() =>
           dispatch({
-            type: 'OPEN_CHAT',
+            type:
+              'OPEN_CHAT',
           })
         }
         onClose={() =>
           dispatch({
-            type: 'CLOSE_CHAT',
+            type:
+              'CLOSE_CHAT',
           })
         }
         onMinimize={() =>
           dispatch({
-            type: 'MINIMIZE_CHAT',
+            type:
+              'MINIMIZE_CHAT',
           })
         }
         onRestore={() =>
           dispatch({
-            type: 'RESTORE_CHAT',
+            type:
+              'RESTORE_CHAT',
           })
         }
         onSendMessage={(message) => {
-          void handleSendMessage(message)
+          void handleSendMessage(
+            message,
+          )
         }}
         onSelectService={(service) => {
-          void handleSelectService(service)
+          void handleSelectService(
+            service,
+          )
         }}
         onRequestSpecialist={() => {
           void handleRequestSpecialist()
@@ -397,41 +641,23 @@ function App() {
             value,
           )
         }}
-        onSubmitPreferredContactTime={
-          handlePreferredContactTime
-        }
+        onSubmitPreferredContactTime={(
+          preferredTime,
+        ) => {
+          void handlePreferredContactTime(
+            preferredTime,
+          )
+        }}
       />
-
-      {import.meta.env.DEV && (
-        <button
-          type="button"
-          className="mock-timeout-trigger"
-          onClick={() =>
-            setHumanTimedOut(true)
-          }
-        >
-          Mock Human Timeout
-        </button>
-      )}
-
-      {import.meta.env.DEV && (
-        <button
-          type="button"
-          className="mock-human-trigger"
-          onClick={
-            handleMockHumanReply
-          }
-        >
-          Mock Human Reply
-        </button>
-      )}
 
       {import.meta.env.DEV && (
         <button
           type="button"
           className="mock-system-states-trigger"
           onClick={() =>
-            setShowSystemStatesQA(true)
+            setShowSystemStatesQA(
+              true,
+            )
           }
         >
           System States QA
