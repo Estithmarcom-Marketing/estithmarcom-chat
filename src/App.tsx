@@ -595,6 +595,9 @@ function App() {
     preferredTime: string,
   ) {
     try {
+      const currentMode =
+        state.context?.mode
+
       const updatedContext =
         await apiChatService
           .submitPreferredContactTime({
@@ -610,8 +613,13 @@ function App() {
         type:
           'SET_CONTEXT',
 
-        payload:
-          updatedContext,
+        payload: {
+          ...updatedContext,
+
+          mode:
+            currentMode ??
+            updatedContext.mode,
+        },
       })
     } catch (error) {
       console.error(
@@ -620,7 +628,6 @@ function App() {
       )
     }
   }
-
   if (showSystemStatesQA) {
     return (
       <main className="system-states-page">
