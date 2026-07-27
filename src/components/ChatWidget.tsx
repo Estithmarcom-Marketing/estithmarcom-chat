@@ -5,6 +5,7 @@
 import type {
   ChatMessage,
   ChatMode,
+  SelectedServiceContext,
 } from '../types'
 
 import type {
@@ -33,7 +34,16 @@ import {
   WelcomeCard,
 } from './index'
 
-const mockServiceNames: Record<string, string> = {
+const categoryNames: Record<string, string> = {
+  'government-services':
+    'الخدمات الحكومية',
+}
+
+const platformNames: Record<string, string> = {
+  muqeem: 'مقيم',
+}
+
+const serviceNames: Record<string, string> = {
   'issue-residency': 'إصدار إقامة',
   'renew-residency': 'تجديد إقامة',
   'exit-reentry': 'تأشيرة خروج وعودة',
@@ -63,6 +73,10 @@ interface ChatWidgetProps {
     message: string,
   ) => void
 
+  onSelectService: (
+    service: SelectedServiceContext,
+  ) => void
+
   onRequestSpecialist: () => void
 
   onSubmitContactField: (
@@ -89,6 +103,7 @@ export function ChatWidget({
   onMinimize,
   onRestore,
   onSendMessage,
+  onSelectService,
   onRequestSpecialist,
   onSubmitContactField,
   onSubmitPreferredContactTime,
@@ -137,7 +152,7 @@ export function ChatWidget({
 
   const selectedServiceName =
     navigation.serviceId
-      ? mockServiceNames[
+      ? serviceNames[
           navigation.serviceId
         ]
       : undefined
@@ -150,6 +165,45 @@ export function ChatWidget({
 
   const isCollectingContact =
     Boolean(missingContactField)
+
+  function handleSelectService(
+    serviceId: string,
+  ) {
+    dispatchNavigation({
+      type: 'SELECT_SERVICE',
+      serviceId,
+    })
+
+    const categoryId =
+      navigation.categoryId
+
+    const platformId =
+      navigation.platformId
+
+    const serviceName =
+      serviceNames[serviceId]
+
+    if (
+      !categoryId ||
+      !platformId ||
+      !serviceName
+    ) {
+      return
+    }
+
+    onSelectService({
+      categoryId,
+      categoryName:
+        categoryNames[categoryId],
+
+      platformId,
+      platformName:
+        platformNames[platformId],
+
+      serviceId,
+      serviceName,
+    })
+  }
 
   return (
     <section
@@ -297,15 +351,9 @@ export function ChatWidget({
                     type: 'BACK',
                   })
                 }}
-                onSelectService={(
-                  serviceId,
-                ) => {
-                  dispatchNavigation({
-                    type:
-                      'SELECT_SERVICE',
-                    serviceId,
-                  })
-                }}
+                onSelectService={
+                  handleSelectService
+                }
               />
             )}
 
@@ -358,5 +406,3 @@ export function ChatWidget({
     </section>
   )
 }
-
-

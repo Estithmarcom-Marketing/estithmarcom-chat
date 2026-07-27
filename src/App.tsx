@@ -6,6 +6,7 @@
 
 import type {
   CustomerContact,
+  SelectedServiceContext,
 } from './types'
 
 import type {
@@ -162,6 +163,62 @@ function App() {
         payload: assistantReply,
       })
     }
+  }
+
+  async function handleSelectService(
+    service: SelectedServiceContext,
+  ) {
+    if (
+      !service.categoryId ||
+      !service.platformId ||
+      !service.serviceId
+    ) {
+      return
+    }
+
+    const updatedContext =
+      await mockChatService.selectService({
+        conversationId:
+          state.context?.conversationId,
+
+        categoryId:
+          service.categoryId,
+
+        platformId:
+          service.platformId,
+
+        serviceId:
+          service.serviceId,
+      })
+
+    dispatch({
+      type: 'SET_CONTEXT',
+      payload: {
+        ...updatedContext,
+
+        service: {
+          ...updatedContext.service,
+
+          categoryId:
+            service.categoryId,
+
+          categoryName:
+            service.categoryName,
+
+          platformId:
+            service.platformId,
+
+          platformName:
+            service.platformName,
+
+          serviceId:
+            service.serviceId,
+
+          serviceName:
+            service.serviceName,
+        },
+      },
+    })
   }
 
   async function completeMockHandoff() {
@@ -324,6 +381,9 @@ function App() {
         }
         onSendMessage={(message) => {
           void handleSendMessage(message)
+        }}
+        onSelectService={(service) => {
+          void handleSelectService(service)
         }}
         onRequestSpecialist={() => {
           void handleRequestSpecialist()
