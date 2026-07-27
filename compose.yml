@@ -23,6 +23,46 @@ services:
       retries: 3
       start_period: 10s
 
+  estithmarcom-chat-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+
+    container_name: estithmarcom-chat-api
+
+    restart: unless-stopped
+
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+
+      DATABASE_HOST: shared-postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: n8n
+      DATABASE_USER: ${EST_CHAT_DATABASE_USER}
+      DATABASE_PASSWORD: ${EST_CHAT_DATABASE_PASSWORD}
+
+    networks:
+      - backend_int
+      - automation_internal
+
+    expose:
+      - "3001"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 networks:
   backend_int:
+    external: true
+
+  automation_internal:
     external: true

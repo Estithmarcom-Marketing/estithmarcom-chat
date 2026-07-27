@@ -2,7 +2,9 @@ import type {
   FastifyInstance,
 } from 'fastify'
 
-import { createSession } from '../services/session-service.js'
+import {
+  createSession,
+} from '../services/session-service.js'
 
 interface StartSessionBody {
   locale?: 'ar' | 'en'
@@ -35,9 +37,10 @@ export async function sessionRoutes(
       },
     },
     async (request, reply) => {
-      const session = createSession(
-        request.body?.locale ?? 'ar',
-      )
+      const session =
+        await createSession(
+          request.body?.locale ?? 'ar',
+        )
 
       return reply
         .code(201)
