@@ -10,15 +10,27 @@ interface ChatwootContactInbox {
   }
 }
 
-interface ChatwootContactPayload {
+interface ChatwootContact {
   id?: number
-  source_id?: string
+  identifier?: string
 
   contact_inboxes?: ChatwootContactInbox[]
 }
 
+interface ChatwootCreateContactPayload {
+  contact?: ChatwootContact
+
+  contact_inbox?: {
+    inbox?: {
+      id?: number
+    }
+
+    source_id?: string
+  }
+}
+
 interface ChatwootCreateContactResponse {
-  payload?: ChatwootContactPayload
+  payload?: ChatwootCreateContactPayload
 }
 
 interface ChatwootCreateConversationResponse {
@@ -123,17 +135,14 @@ export async function createChatwootContact(
       },
     )
 
-  const payload =
-    response.payload
+  const contact =
+    response.payload?.contact
 
-  if (!payload) {
-    throw new Error(
-      'Chatwoot contact response does not contain payload',
-    )
-  }
+  const contactInbox =
+    response.payload?.contact_inbox
 
   const contactId =
-    payload.id
+    contact?.id
 
   if (
     !isPositiveInteger(
@@ -146,25 +155,24 @@ export async function createChatwootContact(
   }
 
   const directSourceId =
-    payload.source_id?.trim()
+    contactInbox
+      ?.source_id
+      ?.trim()
 
-  const contactInbox =
-    payload
-      .contact_inboxes
+  const nestedSourceId =
+    contact
+      ?.contact_inboxes
       ?.find(
         (item) =>
           item.inbox?.id ===
           input.inboxId,
       )
-
-  const contactInboxSourceId =
-    contactInbox
       ?.source_id
       ?.trim()
 
   const sourceId =
     directSourceId ||
-    contactInboxSourceId
+    nestedSourceId
 
   if (!sourceId) {
     throw new Error(
