@@ -34,6 +34,12 @@ export interface PublicSessionRecord {
   updatedAt: string
 }
 
+export interface ConversationRuntimeState {
+  handoffRequested: boolean
+  humanMode: boolean
+  humanModeStartedAt: string | null
+}
+
 interface PublicSessionRow {
   public_session_id: string
   conversation_id: string | null
@@ -58,6 +64,12 @@ interface PublicSessionRow {
 
   created_at: Date
   updated_at: Date
+}
+
+interface ConversationRuntimeStateRow {
+  handoff_requested: boolean
+  human_mode: boolean
+  human_mode_started_at: Date | null
 }
 
 const publicSessionColumns = `
@@ -190,6 +202,49 @@ export async function findPublicSessionById(
   }
 
   return mapPublicSessionRow(row)
+}
+
+export async function findConversationRuntimeState(
+  conversationId: number,
+): Promise<ConversationRuntimeState> {
+  const result =
+    await databasePool.query<ConversationRuntimeStateRow>(
+      `
+        SELECT
+          handoff_requested,
+          human_mode,
+          human_mode_started_at
+        FROM est_chat_conversation_state
+        WHERE conversation_id = $1
+        LIMIT 1
+      `,
+      [
+        conversationId,
+      ],
+    )
+
+  const row =
+    result.rows[0]
+
+  if (!row) {
+    return {
+      handoffRequested: false,
+      humanMode: false,
+      humanModeStartedAt: null,
+    }
+  }
+
+  return {
+    handoffRequested:
+      row.handoff_requested,
+
+    humanMode:
+      row.human_mode,
+
+    humanModeStartedAt:
+      row.human_mode_started_at
+        ?.toISOString() ?? null,
+  }
 }
 
 export async function updatePublicSessionChatwootWidget(
@@ -445,33 +500,4 @@ export async function updatePublicSessionPreferredContactTime(
   }
 
   return mapPublicSessionRow(row)
-}
-
-export async function findConversationHumanModeStartedAt(
-  conversationId: number,
-): Promise<string | null> {
-  const result =
-    await databasePool.query<{
-      human_mode_started_at: Date | null
-    }>(
-      `
-        SELECT
-          human_mode_started_at
-        FROM est_chat_conversation_state
-        WHERE conversation_id = $1
-        LIMIT 1
-      `,
-      [
-        conversationId,
-      ],
-    )
-
-  const row =
-    result.rows[0]
-
-  return (
-    row?.human_mode_started_at
-      ?.toISOString() ??
-    null
-  )
 }

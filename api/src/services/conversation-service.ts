@@ -4,7 +4,7 @@ import {
 } from '../clients/chatwoot-client.js'
 
 import {
-  findConversationHumanModeStartedAt,
+  findConversationRuntimeState,
   findPublicSessionById,
   requestPublicSessionHandoff,
   updatePublicSessionChatwootConversation,
@@ -46,6 +46,7 @@ function buildConversationContext(
   > extends infer T
     ? Exclude<T, null>
     : never,
+  runtimeMode?: ChatMode,
 ): ConversationContext {
   return {
     conversationId:
@@ -55,6 +56,7 @@ function buildConversationContext(
       session.locale,
 
     mode:
+      runtimeMode ??
       mapSessionStatusToChatMode(
         session.status,
       ),
@@ -77,6 +79,28 @@ function buildConversationContext(
     preferredContactTime:
       session.metadata.preferredContactTime,
   }
+}
+
+function mapRuntimeMode(
+  input: {
+    publicSessionStatus: string
+    handoffRequested: boolean
+    humanMode: boolean
+  },
+): ChatMode {
+  if (input.humanMode) {
+    return 'human'
+  }
+
+  if (
+    input.handoffRequested ||
+    input.publicSessionStatus ===
+      'handoff_pending'
+  ) {
+    return 'handoff_pending'
+  }
+
+  return 'assistant'
 }
 
 function mapRestoredMessageAuthor(
@@ -149,9 +173,30 @@ export async function loadConversation(
     return null
   }
 
+  const runtimeState =
+    session.conversationId === null
+      ? {
+          handoffRequested: false,
+          humanMode: false,
+          humanModeStartedAt: null,
+        }
+      : await findConversationRuntimeState(
+          session.conversationId,
+        )
+
   const context =
     buildConversationContext(
       session,
+      mapRuntimeMode({
+        publicSessionStatus:
+          session.status,
+
+        handoffRequested:
+          runtimeState.handoffRequested,
+
+        humanMode:
+          runtimeState.humanMode,
+      }),
     )
 
   if (!session.chatwootAuthToken) {
@@ -165,13 +210,6 @@ export async function loadConversation(
     await loadChatwootWidgetMessages(
       session.chatwootAuthToken,
     )
-
-  const humanModeStartedAt =
-    session.conversationId === null
-      ? null
-      : await findConversationHumanModeStartedAt(
-          session.conversationId,
-        )
 
   const messages: ChatMessage[] =
     chatwootMessages
@@ -207,7 +245,9 @@ export async function loadConversation(
                     ? origin
                     : undefined,
 
-                humanModeStartedAt,
+                humanModeStartedAt:
+                  runtimeState
+                    .humanModeStartedAt,
               }),
 
             content:
