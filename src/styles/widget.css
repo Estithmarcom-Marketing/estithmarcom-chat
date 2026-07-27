@@ -7145,3 +7145,28 @@ button:disabled {
   }
 }
 
+/* =========================================================
+   FINAL QA — SERVICE CONFIRMATION FOOTER CLEARANCE
+   ========================================================= */
+
+.premium-service-confirmation {
+  padding-bottom: 16px;
+}
+
+.premium-service-confirmation__actions {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 420px) {
+  .premium-service-confirmation {
+    padding-bottom:
+      max(
+        18px,
+        env(safe-area-inset-bottom)
+      );
+  }
+
+  .premium-service-confirmation__actions {
+    margin-bottom: 6px;
+  }
+}
