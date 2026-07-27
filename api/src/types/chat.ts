@@ -91,3 +91,8 @@ export interface RequestHandoffInput {
   originalQuestion?: string
   intent?: string
 }
+
+export interface PreferredContactTimeInput {
+  publicSessionId: string
+  preferredContactTime: string
+}

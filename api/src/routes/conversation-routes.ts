@@ -7,6 +7,7 @@ import {
   loadConversation,
   requestConversationHandoff,
   updateConversationContact,
+  updateConversationPreferredContactTime,
   updateConversationService,
 } from '../services/conversation-service.js'
 
@@ -37,6 +38,10 @@ interface RequestHandoffBody {
   handoffReason?: string
   originalQuestion?: string
   intent?: string
+}
+
+interface PreferredContactTimeBody {
+  preferredContactTime: string
 }
 
 const conversationParamsSchema = {
@@ -165,6 +170,22 @@ const requestHandoffBodySchema = {
       type: 'string',
       minLength: 1,
       maxLength: 128,
+    },
+  },
+} as const
+
+const preferredContactTimeBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'preferredContactTime',
+  ],
+
+  properties: {
+    preferredContactTime: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
     },
   },
 } as const
@@ -443,6 +464,56 @@ export async function conversationRoutes(
 
           intent:
             request.body.intent?.trim(),
+        })
+
+      if (!context) {
+        return reply
+          .code(404)
+          .send({
+            error:
+              'conversation_not_found',
+          })
+      }
+
+      return reply
+        .code(200)
+        .send(context)
+    },
+  )
+
+  app.put<{
+    Params: ConversationParams
+    Body: PreferredContactTimeBody
+  }>(
+    '/v1/conversations/:conversationId/preferred-contact-time',
+    {
+      schema: {
+        params:
+          conversationParamsSchema,
+
+        body:
+          preferredContactTimeBodySchema,
+      },
+    },
+    async (request, reply) => {
+      const preferredContactTime =
+        request.body.preferredContactTime.trim()
+
+      if (!preferredContactTime) {
+        return reply
+          .code(400)
+          .send({
+            error:
+              'preferred_contact_time_required',
+          })
+      }
+
+      const context =
+        await updateConversationPreferredContactTime({
+          publicSessionId:
+            request.params.conversationId,
+
+          preferredContactTime,
         })
 
       if (!context) {
