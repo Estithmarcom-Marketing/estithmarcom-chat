@@ -1,4 +1,8 @@
 import {
+  normalizePhoneNumber,
+} from '../lib/phone.js'
+
+import {
   chatwootConfig,
 } from '../config/chatwoot.js'
 
@@ -358,7 +362,9 @@ export async function updateChatwootContact(
     input.name?.trim()
 
   const phone =
-    input.phone?.trim()
+    normalizePhoneNumber(
+      input.phone,
+    )
 
   const email =
     input.email?.trim()
