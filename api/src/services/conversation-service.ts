@@ -796,6 +796,27 @@ export async function updateConversationPreferredContactTime(
         updatedSession.conversationId,
 
       attributes: {
+        ...buildHandoffAttributes({
+          publicSessionId:
+            input.publicSessionId,
+
+          contact:
+            updatedSession.metadata
+              .contact,
+
+          service:
+            updatedSession.metadata
+              .service,
+
+          handoffReason:
+            updatedSession.metadata
+              .handoffReason,
+
+          intent:
+            updatedSession.metadata
+              .intent,
+        }),
+
         preferred_contact_time:
           input.preferredContactTime,
       },

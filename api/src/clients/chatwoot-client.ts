@@ -476,6 +476,34 @@ export async function updateChatwootConversationAttributes(
     >
   },
 ): Promise<void> {
+  const conversation =
+    await chatwootRequest<{
+      custom_attributes?: Record<
+        string,
+        string | number | boolean
+      >
+    }>(
+      `/api/v1/accounts/${chatwootConfig.accountId}/conversations/${input.conversationId}`,
+      {
+        method:
+          'GET',
+
+        headers: {
+          api_access_token:
+            chatwootConfig.apiAccessToken,
+        },
+      },
+    )
+
+  const mergedAttributes = {
+    ...(
+      conversation
+        .custom_attributes ?? {}
+    ),
+
+    ...input.attributes,
+  }
+
   await chatwootRequest<unknown>(
     `/api/v1/accounts/${chatwootConfig.accountId}/conversations/${input.conversationId}/custom_attributes`,
     {
@@ -490,7 +518,7 @@ export async function updateChatwootConversationAttributes(
       body:
         JSON.stringify({
           custom_attributes:
-            input.attributes,
+            mergedAttributes,
         }),
     },
   )
