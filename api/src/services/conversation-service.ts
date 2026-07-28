@@ -7,6 +7,10 @@ import {
 } from '../clients/chatwoot-client.js'
 
 import {
+  normalizePhoneNumber,
+} from '../lib/phone.js'
+
+import {
   findConversationRuntimeState,
   findPublicSessionById,
   requestPublicSessionHandoff,
@@ -164,9 +168,66 @@ function mapRestoredMessageAuthor(
   return 'assistant'
 }
 
+function isDuplicateChatwootPhoneError(
+  error: unknown,
+): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes(
+      'Phone number has already been taken',
+    )
+  )
+}
+
+async function synchronizeChatwootContactSafely(
+  input: {
+    publicSessionId: string
+    contactId: number
+    name?: string
+    phone?: string
+    email?: string
+  },
+): Promise<void> {
+  try {
+    await updateChatwootContact({
+      contactId:
+        input.contactId,
+
+      name:
+        input.name,
+
+      phone:
+        input.phone,
+
+      email:
+        input.email,
+    })
+  } catch (error) {
+    if (!isDuplicateChatwootPhoneError(error)) {
+      throw error
+    }
+
+    console.warn(
+      'Chatwoot contact phone already belongs to another contact; continuing with conversation customer_phone attribute.',
+      {
+        publicSessionId:
+          input.publicSessionId,
+
+        chatwootContactId:
+          input.contactId,
+      },
+    )
+  }
+}
+
 function buildHandoffAttributes(
   input: {
     publicSessionId: string
+
+    contact?: {
+      phone?: string
+    }
+
     service?: {
       categoryId?: string
       categoryName?: string
@@ -175,6 +236,7 @@ function buildHandoffAttributes(
       serviceId?: string
       serviceName?: string
     }
+
     handoffReason?: string
     intent?: string
   },
@@ -183,6 +245,16 @@ function buildHandoffAttributes(
     Record<string, string> = {
       public_session_id:
         input.publicSessionId,
+    }
+
+  const normalizedPhone =
+    normalizePhoneNumber(
+      input.contact?.phone,
+    )
+
+  if (normalizedPhone) {
+    attributes.customer_phone =
+      normalizedPhone
   }
 
   const service =
@@ -257,14 +329,10 @@ async function ensureChatwootConversationContext(
     )
   }
 
-  /*
-   * Always synchronize the contact before creating
-   * or updating the conversation.
-   *
-   * This also covers cases where the customer details
-   * were saved before Chatwoot initialization completed.
-   */
-  await updateChatwootContact({
+  await synchronizeChatwootContactSafely({
+    publicSessionId:
+      input.publicSessionId,
+
     contactId:
       session.chatwootContactId,
 
@@ -282,6 +350,9 @@ async function ensureChatwootConversationContext(
     buildHandoffAttributes({
       publicSessionId:
         input.publicSessionId,
+
+      contact:
+        session.metadata.contact,
 
       service:
         session.metadata.service,
@@ -549,6 +620,10 @@ export async function updateConversationService(
           publicSessionId:
             input.publicSessionId,
 
+          contact:
+            updatedSession
+              .metadata.contact,
+
           service:
             updatedSession
               .metadata.service,
@@ -594,7 +669,10 @@ export async function updateConversationContact(
   if (
     session.chatwootContactId
   ) {
-    await updateChatwootContact({
+    await synchronizeChatwootContactSafely({
+      publicSessionId:
+        input.publicSessionId,
+
       contactId:
         session.chatwootContactId,
 
@@ -609,6 +687,38 @@ export async function updateConversationContact(
       email:
         updatedSession.metadata
           .contact?.email,
+    })
+  }
+
+  if (
+    updatedSession.conversationId !==
+    null
+  ) {
+    await updateChatwootConversationAttributes({
+      conversationId:
+        updatedSession.conversationId,
+
+      attributes:
+        buildHandoffAttributes({
+          publicSessionId:
+            input.publicSessionId,
+
+          contact:
+            updatedSession.metadata
+              .contact,
+
+          service:
+            updatedSession.metadata
+              .service,
+
+          handoffReason:
+            updatedSession.metadata
+              .handoffReason,
+
+          intent:
+            updatedSession.metadata
+              .intent,
+        }),
     })
   }
 
