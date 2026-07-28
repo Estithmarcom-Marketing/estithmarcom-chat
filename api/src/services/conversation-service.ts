@@ -249,6 +249,35 @@ async function ensureChatwootConversationContext(
     )
   }
 
+  if (
+    !session.chatwootContactId
+  ) {
+    throw new Error(
+      'Chatwoot contact is not initialized',
+    )
+  }
+
+  /*
+   * Always synchronize the contact before creating
+   * or updating the conversation.
+   *
+   * This also covers cases where the customer details
+   * were saved before Chatwoot initialization completed.
+   */
+  await updateChatwootContact({
+    contactId:
+      session.chatwootContactId,
+
+    name:
+      session.metadata.contact?.name,
+
+    phone:
+      session.metadata.contact?.phone,
+
+    email:
+      session.metadata.contact?.email,
+  })
+
   const attributes =
     buildHandoffAttributes({
       publicSessionId:
@@ -278,10 +307,7 @@ async function ensureChatwootConversationContext(
     return session.conversationId
   }
 
-  if (
-    !session.chatwootSourceId ||
-    !session.chatwootContactId
-  ) {
+  if (!session.chatwootSourceId) {
     throw new Error(
       'Chatwoot widget session is not initialized',
     )
