@@ -651,6 +651,21 @@ export async function updateConversationPreferredContactTime(
     return null
   }
 
+  if (
+    updatedSession.conversationId !==
+    null
+  ) {
+    await updateChatwootConversationAttributes({
+      conversationId:
+        updatedSession.conversationId,
+
+      attributes: {
+        preferred_contact_time:
+          input.preferredContactTime,
+      },
+    })
+  }
+
   return buildConversationContext(
     updatedSession,
   )
