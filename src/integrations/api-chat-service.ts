@@ -236,11 +236,42 @@ export const apiChatService: ChatService = {
       )
 
     /*
-     * Important:
-     * send a real customer message first so Chatwoot/n8n
-     * receives the handoff request. The public-session
-     * handoff endpoint then persists the UI/runtime context.
+     * Prepare the handoff first.
+     *
+     * The backend will:
+     * - ensure the Chatwoot conversation exists
+     * - synchronize service/handoff custom attributes
+     * - persist handoff_pending
+     *
+     * Only after that do we send the real customer
+     * message that triggers Chatwoot/n8n.
      */
+    const context =
+      await apiRequest<ConversationContext>(
+        `/v1/conversations/${encodeURIComponent(
+          conversationId,
+        )}/handoff`,
+        {
+          method:
+            'POST',
+
+          body:
+            JSON.stringify({
+              handoffReason:
+                input.handoffReason ??
+                'طلب العميل التحدث مع موظف مختص',
+
+              originalQuestion:
+                input.originalQuestion ??
+                'أريد التحدث مع موظف مختص',
+
+              intent:
+                input.intent ??
+                'human_handoff',
+            }),
+        },
+      )
+
     await apiRequest<ChatMessage>(
       `/v1/conversations/${encodeURIComponent(
         conversationId,
@@ -254,34 +285,11 @@ export const apiChatService: ChatService = {
             content:
               input.originalQuestion ??
               'أريد التحدث مع موظف مختص',
-          }),
+        }),
       },
     )
 
-    return await apiRequest<ConversationContext>(
-      `/v1/conversations/${encodeURIComponent(
-        conversationId,
-      )}/handoff`,
-      {
-        method:
-          'POST',
-
-        body:
-          JSON.stringify({
-            handoffReason:
-              input.handoffReason ??
-              'طلب العميل التحدث مع موظف مختص',
-
-            originalQuestion:
-              input.originalQuestion ??
-              'أريد التحدث مع موظف مختص',
-
-            intent:
-              input.intent ??
-              'human_handoff',
-          }),
-      },
-    )
+    return context
   },
 
   async updateContact(

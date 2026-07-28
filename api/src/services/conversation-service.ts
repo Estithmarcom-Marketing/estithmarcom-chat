@@ -1,6 +1,9 @@
 import {
+  createChatwootConversation,
   createChatwootWidgetMessage,
   loadChatwootWidgetMessages,
+  updateChatwootContact,
+  updateChatwootConversationAttributes,
 } from '../clients/chatwoot-client.js'
 
 import {
@@ -159,6 +162,159 @@ function mapRestoredMessageAuthor(
   }
 
   return 'assistant'
+}
+
+function buildHandoffAttributes(
+  input: {
+    publicSessionId: string
+    service?: {
+      categoryId?: string
+      categoryName?: string
+      platformId?: string
+      platformName?: string
+      serviceId?: string
+      serviceName?: string
+    }
+    handoffReason?: string
+    intent?: string
+  },
+): Record<string, string> {
+  const attributes:
+    Record<string, string> = {
+      public_session_id:
+        input.publicSessionId,
+  }
+
+  const service =
+    input.service
+
+  if (service?.serviceId) {
+    attributes.service_id =
+      service.serviceId
+  }
+
+  if (service?.serviceName) {
+    attributes.service_name =
+      service.serviceName
+  }
+
+  if (service?.categoryId) {
+    attributes.category_id =
+      service.categoryId
+  }
+
+  if (service?.categoryName) {
+    attributes.category_name =
+      service.categoryName
+  }
+
+  if (service?.platformId) {
+    attributes.platform_id =
+      service.platformId
+  }
+
+  if (service?.platformName) {
+    attributes.platform_name =
+      service.platformName
+  }
+
+  if (input.handoffReason) {
+    attributes.handoff_reason =
+      input.handoffReason
+  }
+
+  if (input.intent) {
+    attributes.intent =
+      input.intent
+  }
+
+  return attributes
+}
+
+async function ensureChatwootConversationContext(
+  input: {
+    publicSessionId: string
+    handoffReason?: string
+    intent?: string
+  },
+): Promise<number> {
+  const session =
+    await findPublicSessionById(
+      input.publicSessionId,
+    )
+
+  if (!session) {
+    throw new Error(
+      'Public chat session not found',
+    )
+  }
+
+  const attributes =
+    buildHandoffAttributes({
+      publicSessionId:
+        input.publicSessionId,
+
+      service:
+        session.metadata.service,
+
+      handoffReason:
+        input.handoffReason,
+
+      intent:
+        input.intent,
+    })
+
+  if (
+    session.conversationId !==
+    null
+  ) {
+    await updateChatwootConversationAttributes({
+      conversationId:
+        session.conversationId,
+
+      attributes,
+    })
+
+    return session.conversationId
+  }
+
+  if (
+    !session.chatwootSourceId ||
+    !session.chatwootContactId
+  ) {
+    throw new Error(
+      'Chatwoot widget session is not initialized',
+    )
+  }
+
+  const conversationId =
+    await createChatwootConversation({
+      sourceId:
+        session.chatwootSourceId,
+
+      inboxId:
+        session.inboxId,
+
+      contactId:
+        session.chatwootContactId,
+
+      customAttributes:
+        attributes,
+    })
+
+  const updatedSession =
+    await updatePublicSessionChatwootConversation(
+      input.publicSessionId,
+      conversationId,
+    )
+
+  if (!updatedSession) {
+    throw new Error(
+      'Failed to persist Chatwoot conversation mapping',
+    )
+  }
+
+  return conversationId
 }
 
 export async function loadConversation(
@@ -354,6 +510,34 @@ export async function updateConversationService(
     return null
   }
 
+  if (
+    updatedSession.conversationId !==
+    null
+  ) {
+    await updateChatwootConversationAttributes({
+      conversationId:
+        updatedSession.conversationId,
+
+      attributes:
+        buildHandoffAttributes({
+          publicSessionId:
+            input.publicSessionId,
+
+          service:
+            updatedSession
+              .metadata.service,
+
+          handoffReason:
+            updatedSession
+              .metadata.handoffReason,
+
+          intent:
+            updatedSession
+              .metadata.intent,
+        }),
+    })
+  }
+
   return buildConversationContext(
     updatedSession,
   )
@@ -362,6 +546,15 @@ export async function updateConversationService(
 export async function updateConversationContact(
   input: UpdateContactInput,
 ): Promise<ConversationContext | null> {
+  const session =
+    await findPublicSessionById(
+      input.publicSessionId,
+    )
+
+  if (!session) {
+    return null
+  }
+
   const updatedSession =
     await updatePublicSessionContact(
       input.publicSessionId,
@@ -372,6 +565,27 @@ export async function updateConversationContact(
     return null
   }
 
+  if (
+    session.chatwootContactId
+  ) {
+    await updateChatwootContact({
+      contactId:
+        session.chatwootContactId,
+
+      name:
+        updatedSession.metadata
+          .contact?.name,
+
+      phone:
+        updatedSession.metadata
+          .contact?.phone,
+
+      email:
+        updatedSession.metadata
+          .contact?.email,
+    })
+  }
+
   return buildConversationContext(
     updatedSession,
   )
@@ -380,6 +594,26 @@ export async function updateConversationContact(
 export async function requestConversationHandoff(
   input: RequestHandoffInput,
 ): Promise<ConversationContext | null> {
+  const session =
+    await findPublicSessionById(
+      input.publicSessionId,
+    )
+
+  if (!session) {
+    return null
+  }
+
+  await ensureChatwootConversationContext({
+    publicSessionId:
+      input.publicSessionId,
+
+    handoffReason:
+      input.handoffReason,
+
+    intent:
+      input.intent,
+  })
+
   const updatedSession =
     await requestPublicSessionHandoff(
       input.publicSessionId,

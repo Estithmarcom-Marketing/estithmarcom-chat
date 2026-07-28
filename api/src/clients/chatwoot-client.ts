@@ -340,6 +340,156 @@ export async function createChatwootWidgetMessage(
   }
 }
 
+export async function updateChatwootContact(
+  input: {
+    contactId: number
+    name?: string
+    phone?: string
+    email?: string
+  },
+): Promise<void> {
+  const payload: {
+    name?: string
+    phone_number?: string
+    email?: string
+  } = {}
+
+  const name =
+    input.name?.trim()
+
+  const phone =
+    input.phone?.trim()
+
+  const email =
+    input.email?.trim()
+
+  if (name) {
+    payload.name =
+      name
+  }
+
+  if (phone) {
+    payload.phone_number =
+      phone
+  }
+
+  if (email) {
+    payload.email =
+      email
+  }
+
+  if (
+    Object.keys(payload)
+      .length === 0
+  ) {
+    return
+  }
+
+  await chatwootRequest<unknown>(
+    `/api/v1/accounts/${chatwootConfig.accountId}/contacts/${input.contactId}`,
+    {
+      method:
+        'PUT',
+
+      headers: {
+        api_access_token:
+          chatwootConfig.apiAccessToken,
+      },
+
+      body:
+        JSON.stringify(
+          payload,
+        ),
+    },
+  )
+}
+
+export async function createChatwootConversation(
+  input: {
+    sourceId: string
+    inboxId: number
+    contactId: number
+    customAttributes?: Record<
+      string,
+      string | number | boolean
+    >
+  },
+): Promise<number> {
+  const response =
+    await chatwootRequest<{
+      id?: number
+    }>(
+      `/api/v1/accounts/${chatwootConfig.accountId}/conversations`,
+      {
+        method:
+          'POST',
+
+        headers: {
+          api_access_token:
+            chatwootConfig.apiAccessToken,
+        },
+
+        body:
+          JSON.stringify({
+            source_id:
+              input.sourceId,
+
+            inbox_id:
+              input.inboxId,
+
+            contact_id:
+              input.contactId,
+
+            status:
+              'open',
+
+            custom_attributes:
+              input.customAttributes ?? {},
+          }),
+      },
+    )
+
+  if (
+    !isPositiveInteger(
+      response.id,
+    )
+  ) {
+    throw new Error(
+      'Chatwoot did not return a valid conversation id',
+    )
+  }
+
+  return response.id
+}
+export async function updateChatwootConversationAttributes(
+  input: {
+    conversationId: number
+    attributes: Record<
+      string,
+      string | number | boolean
+    >
+  },
+): Promise<void> {
+  await chatwootRequest<unknown>(
+    `/api/v1/accounts/${chatwootConfig.accountId}/conversations/${input.conversationId}/custom_attributes`,
+    {
+      method:
+        'POST',
+
+      headers: {
+        api_access_token:
+          chatwootConfig.apiAccessToken,
+      },
+
+      body:
+        JSON.stringify({
+          custom_attributes:
+            input.attributes,
+        }),
+    },
+  )
+}
+
 export async function loadChatwootWidgetMessages(
   authToken: string,
 ): Promise<ChatwootRestoredMessage[]> {

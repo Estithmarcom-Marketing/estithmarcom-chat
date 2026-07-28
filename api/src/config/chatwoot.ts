@@ -22,6 +22,29 @@ function normalizeBaseUrl(
   )
 }
 
+function requirePositiveIntegerEnvironmentVariable(
+  name: string,
+): number {
+  const rawValue =
+    requireEnvironmentVariable(
+      name,
+    )
+
+  const value =
+    Number(rawValue)
+
+  if (
+    !Number.isInteger(value) ||
+    value <= 0
+  ) {
+    throw new Error(
+      `Environment variable ${name} must be a positive integer`,
+    )
+  }
+
+  return value
+}
+
 export const chatwootConfig = {
   baseUrl:
     normalizeBaseUrl(
@@ -38,6 +61,11 @@ export const chatwootConfig = {
   websiteToken:
     requireEnvironmentVariable(
       'CHATWOOT_WEBSITE_TOKEN',
+    ),
+
+  accountId:
+    requirePositiveIntegerEnvironmentVariable(
+      'CHATWOOT_ACCOUNT_ID',
     ),
 
   requestTimeoutMs:
