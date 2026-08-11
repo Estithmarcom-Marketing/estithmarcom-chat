@@ -7170,3 +7170,1831 @@ button:disabled {
     margin-bottom: 6px;
   }
 }
+
+
+/* =========================================================
+   CONVERSATIONAL ENTRY — STEP 6B
+   Presentation only.
+   Existing catalog IDs, navigation and callbacks are preserved.
+   ========================================================= */
+
+.conversation-entry {
+  width: 100%;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.conversation-entry__assistant {
+  width: min(88%, 360px);
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+.conversation-entry__identity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 4px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted, #6f6875);
+}
+
+.conversation-entry__avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(75, 38, 92, 0.12),
+      rgba(196, 150, 64, 0.12)
+    );
+  color: var(--color-primary, #4b265c);
+  border: 1px solid rgba(75, 38, 92, 0.1);
+}
+
+.conversation-entry__bubble {
+  position: relative;
+  padding: 15px 16px;
+  border-radius: 18px 18px 6px 18px;
+  background: #ffffff;
+  border: 1px solid rgba(75, 38, 92, 0.1);
+  box-shadow:
+    0 8px 24px rgba(38, 25, 44, 0.06);
+}
+
+.conversation-entry__title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--color-text, #2f2435);
+}
+
+.conversation-entry__bubble p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--color-text-muted, #746d78);
+}
+
+.conversation-entry__bubble p + p {
+  margin-top: 7px;
+}
+
+.smart-suggestions__prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 2px 4px 10px;
+}
+
+.smart-suggestions__spark {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  background: rgba(75, 38, 92, 0.07);
+  color: var(--color-primary, #4b265c);
+  font-size: 12px;
+}
+
+.smart-suggestions__prompt div {
+  display: grid;
+  gap: 2px;
+}
+
+.smart-suggestions__prompt strong {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text, #2f2435);
+}
+
+.smart-suggestions__prompt div > span {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-muted, #817985);
+}
+
+/*
+ * Existing catalog cards become assistant suggestions.
+ * No catalog or navigation logic is changed.
+ */
+.premium-category-list {
+  padding-top: 0;
+}
+
+.premium-category-card {
+  min-height: 58px;
+}
+
+@media (max-width: 480px) {
+  .conversation-entry__assistant {
+    width: 92%;
+  }
+
+  .conversation-entry__bubble {
+    padding: 13px 14px;
+  }
+
+  .conversation-entry__title {
+    font-size: 16px;
+  }
+}
+
+
+/* =========================================================
+   STEP 6C.3 — DYNAMIC AI SUGGESTIONS
+   Render Chatwoot input_select items as conversational choices.
+   ========================================================= */
+
+.premium-message-bubble__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.premium-message-bubble__suggestion {
+  appearance: none;
+  border: 1px solid rgba(75, 38, 92, 0.16);
+  border-radius: 999px;
+  background: rgba(75, 38, 92, 0.045);
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(
+    --color-primary,
+    #4b265c
+  );
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.premium-message-bubble__suggestion:hover {
+  transform: translateY(-1px);
+  background: rgba(75, 38, 92, 0.085);
+  border-color: rgba(75, 38, 92, 0.28);
+}
+
+.premium-message-bubble__suggestion:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.premium-message-bubble__suggestion:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 420px) {
+  .premium-message-bubble__suggestions {
+    gap: 7px;
+  }
+
+  .premium-message-bubble__suggestion {
+    padding: 8px 11px;
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   STEP 1C — AI CONVERSATION ENTRY SEQUENCE
+
+   Presentation only.
+   No catalog, navigation, API or conversation logic changes.
+
+   Sequence:
+   1. Welcome assistant bubble
+   2. Smart suggestions prompt
+   3. Existing catalog choices one by one
+   ========================================================= */
+
+.conversation-entry {
+  animation:
+    ai-welcome-enter
+    320ms
+    var(--ease-emphasized)
+    backwards;
+}
+
+@keyframes ai-welcome-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smart-suggestions__prompt {
+  animation:
+    ai-suggestion-prompt-enter
+    320ms
+    var(--ease-emphasized)
+    380ms
+    backwards;
+}
+
+@keyframes ai-suggestion-prompt-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Override the previous 55ms category stagger.
+ *
+ * First suggestion waits until the assistant
+ * has visually finished asking the question.
+ */
+.premium-category-card-wrap {
+  animation:
+    premium-category-enter
+    340ms
+    var(--ease-emphasized)
+    backwards;
+
+  animation-delay:
+    calc(
+      760ms +
+      (
+        var(--category-index) *
+        145ms
+      )
+    );
+}
+
+/*
+ * Accessibility:
+ * users requesting reduced motion receive
+ * the complete interface immediately.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .conversation-entry,
+  .smart-suggestions__prompt,
+  .premium-category-card-wrap {
+    animation: none !important;
+  }
+}
+
+
+/* =========================================================
+   STEP 2B.1 — AI PLATFORM PRESENTATION POLISH
+
+   Presentation only.
+   Catalog / IDs / navigation / handoff remain unchanged.
+   ========================================================= */
+
+.premium-platform-screen {
+  gap: 12px;
+}
+
+/* Make the assistant question feel like a conversation
+   rather than a large dashboard hero card. */
+
+.premium-platform-screen__hero {
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+
+  padding: 14px 15px;
+
+  border:
+    1px solid
+    rgba(65, 41, 87, 0.09);
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.99),
+      rgba(251, 249, 252, 0.96)
+    );
+
+  box-shadow:
+    0 5px 16px
+      rgba(65, 41, 87, 0.035);
+}
+
+.premium-platform-screen__hero::after {
+  width: 110px;
+  height: 110px;
+
+  top: -60px;
+  left: -45px;
+
+  opacity: 0.55;
+}
+
+.premium-platform-screen__hero-icon {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 12px;
+
+  box-shadow: none;
+
+  font-size: 17px;
+}
+
+.premium-platform-screen__eyebrow {
+  margin-bottom: 3px;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.premium-platform-screen__hero h2 {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.premium-platform-screen__hero p {
+  margin-top: 4px;
+
+  font-size: 9.5px;
+  line-height: 1.7;
+}
+
+/* Quiet suggestion label */
+
+.premium-platform-screen__section-heading {
+  display: block;
+
+  padding: 2px 3px 0;
+
+  border: 0;
+}
+
+.premium-platform-screen__section-heading strong {
+  font-size: 11px;
+  font-weight: 800;
+
+  color: var(--text-muted);
+}
+
+/* Cleaner AI suggestion grid */
+
+.premium-platform-grid {
+  gap: 8px;
+}
+
+.premium-platform-card {
+  grid-template-columns:
+    36px minmax(0, 1fr) 23px;
+
+  gap: 8px;
+
+  min-height: 62px;
+
+  padding: 9px;
+
+  border:
+    1px solid
+    rgba(65, 41, 87, 0.075);
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 3px 10px
+      rgba(65, 41, 87, 0.025);
+}
+
+.premium-platform-card::before {
+  display: none;
+}
+
+.premium-platform-card__icon {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 11px;
+
+  font-size: 16px;
+
+  box-shadow: none;
+}
+
+.premium-platform-card__content {
+  gap: 0;
+}
+
+.premium-platform-card__title {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.premium-platform-card__action {
+  width: 23px;
+  height: 23px;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+}
+
+.premium-platform-card:hover {
+  border-color:
+    rgba(206, 174, 95, 0.30);
+
+  background:
+    rgba(255, 252, 244, 0.72);
+
+  box-shadow:
+    0 6px 16px
+      rgba(65, 41, 87, 0.055);
+
+  transform: translateY(-1px);
+}
+
+/* Small screens keep options comfortable */
+
+@media (max-width: 390px) {
+  .premium-platform-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-platform-card {
+    min-height: 58px;
+  }
+}
+
+
+/* =========================================================
+   STEP 3B.2
+   COMPANY FORMATION — CLEAN SERVICE DISCOVERY
+
+   Presentation only.
+   Catalog IDs, service data, navigation and callbacks
+   remain unchanged.
+   ========================================================= */
+
+/*
+ * Remove the decorative gold hero treatment only from
+ * Company Formation service screens.
+ */
+.premium-service-list__hero--company-formation {
+  display: block;
+
+  padding: 4px 2px 6px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+
+  box-shadow: none;
+}
+
+.premium-service-list__hero--company-formation
+  .premium-service-list__eyebrow {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--brand-accent-deep);
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.premium-service-list__hero--company-formation h2 {
+  margin: 0;
+
+  color: var(--brand-primary-deep);
+
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.55;
+}
+
+.premium-service-list__hero--company-formation p {
+  max-width: 94%;
+
+  margin: 5px 0 0;
+
+  color: var(--text-muted);
+
+  font-size: 10.5px;
+  line-height: 1.75;
+}
+
+/*
+ * Direct service list.
+ * No search field and no decorative service icons.
+ */
+.company-formation-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  width: 100%;
+}
+
+.company-formation-service-list__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding-inline: 2px;
+}
+
+.company-formation-service-list__heading strong {
+  color: var(--text-primary);
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.company-formation-service-list__heading span {
+  color: var(--text-muted);
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.company-formation-service-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.company-formation-service-option {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    28px;
+
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  min-height: 58px;
+
+  padding: 10px 12px;
+
+  border:
+    1px solid
+    rgba(65, 41, 87, 0.085);
+
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  color: var(--text-primary);
+
+  text-align: right;
+
+  transition:
+    transform
+      var(--duration-normal)
+      var(--ease-emphasized),
+    border-color
+      var(--duration-normal)
+      var(--ease-standard),
+    box-shadow
+      var(--duration-normal)
+      var(--ease-standard);
+}
+
+.company-formation-service-option:hover {
+  border-color:
+    rgba(206, 174, 95, 0.34);
+
+  box-shadow:
+    0 6px 17px
+    rgba(65, 41, 87, 0.045);
+
+  transform:
+    translateY(-1px);
+}
+
+.company-formation-service-option__title {
+  min-width: 0;
+
+  color: var(--brand-primary-deep);
+
+  font-size: 11.5px;
+  font-weight: 850;
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+.company-formation-service-option__arrow {
+  display: grid;
+  place-items: center;
+
+  width: 28px;
+  height: 28px;
+
+  border:
+    1px solid
+    rgba(206, 174, 95, 0.24);
+
+  border-radius: 8px;
+
+  background:
+    rgba(206, 174, 95, 0.09);
+
+  color:
+    var(--brand-accent-deep);
+
+  font-size: 18px;
+}
+
+.company-formation-service-option:focus-visible {
+  outline:
+    2px solid
+    rgba(206, 174, 95, 0.72);
+
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .premium-service-list__hero--company-formation h2 {
+    font-size: 17px;
+  }
+
+  .company-formation-service-option {
+    min-height: 56px;
+
+    padding:
+      9px
+      10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .company-formation-service-option {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   BACK NAVIGATION — HOME-LIKE MOTION
+   Presentation only.
+   No catalog/navigation/handoff behavior changes.
+   ========================================================= */
+
+.platform-return-motion__hero {
+  animation:
+    platform-return-enter
+    320ms
+    var(--ease-emphasized)
+    backwards;
+}
+
+.platform-return-motion__heading {
+  animation:
+    platform-return-enter
+    300ms
+    var(--ease-emphasized)
+    150ms
+    backwards;
+}
+
+.platform-return-motion__card {
+  min-width: 0;
+
+  animation:
+    platform-return-enter
+    340ms
+    var(--ease-emphasized)
+    backwards;
+
+  animation-delay:
+    calc(
+      280ms +
+      (
+        var(--platform-return-index) *
+        115ms
+      )
+    );
+}
+
+@keyframes platform-return-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-return-motion__hero,
+  .platform-return-motion__heading,
+  .platform-return-motion__card {
+    animation: none !important;
+  }
+}
+
+
+
+
+/* =========================================================
+   INTERNATIONAL PHONE COUNTRY SELECTOR
+   Contact enrichment — phone step only.
+   ========================================================= */
+
+.premium-contact-enrichment__phone {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  gap: 8px;
+  align-items: end;
+
+  width: 100%;
+}
+
+.premium-contact-enrichment__country {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.premium-contact-enrichment__country-label {
+  padding-inline: 4px;
+
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.premium-contact-enrichment__country-control {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+  min-height: 48px;
+
+  border:
+    1px solid
+    rgba(
+      65,
+      41,
+      87,
+      0.12
+    );
+
+  border-radius: 14px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  overflow: hidden;
+}
+
+.premium-contact-enrichment__selected-flag {
+  flex: 0 0 auto;
+
+  padding-inline-start: 12px;
+
+  font-size: 18px;
+  line-height: 1;
+}
+
+.premium-contact-enrichment__country-control select {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+
+  padding:
+    0
+    10px
+    0
+    30px;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  appearance: none;
+}
+
+.premium-contact-enrichment__country-chevron {
+  position: absolute;
+  inset-inline-end: 10px;
+
+  pointer-events: none;
+
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 11px;
+}
+
+.premium-contact-enrichment__dial-code {
+  display: grid;
+  place-items: center;
+
+  min-width: 64px;
+  height: 48px;
+
+  padding-inline: 10px;
+
+  border:
+    1px solid
+    rgba(
+      196,
+      150,
+      64,
+      0.28
+    );
+
+  border-radius: 14px;
+
+  background:
+    rgba(
+      196,
+      150,
+      64,
+      0.07
+    );
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  direction: ltr;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.premium-contact-enrichment__phone-error {
+  display: block;
+
+  width: 100%;
+
+  margin-top: -2px;
+  padding-inline: 4px;
+
+  color: #9c4b4b;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 360px) {
+  .premium-contact-enrichment__phone {
+    grid-template-columns:
+      minmax(0, 1fr)
+      58px;
+  }
+
+  .premium-contact-enrichment__country-control select {
+    font-size: 11px;
+  }
+
+  .premium-contact-enrichment__dial-code {
+    min-width: 58px;
+    padding-inline: 6px;
+  }
+}
+
+
+/* =========================================================
+   INTERNATIONAL PHONE — FINAL LAYOUT POLISH
+   ========================================================= */
+
+.premium-contact-enrichment__form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.premium-contact-enrichment__phone {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.6fr);
+  gap: 10px;
+  align-items: end;
+  width: 100%;
+}
+
+/* Country selector */
+
+.premium-contact-enrichment__country {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+}
+
+.premium-contact-enrichment__country-label {
+  display: block;
+  padding-inline: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted, #756e7b);
+}
+
+.premium-contact-enrichment__country-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+
+  border: 1px solid rgba(65, 41, 87, 0.12);
+  border-radius: 14px;
+
+  background: #fff;
+  overflow: hidden;
+}
+
+.premium-contact-enrichment__selected-flag {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 34px;
+  width: 34px;
+  height: 100%;
+
+  padding: 0;
+
+  font-size: 18px;
+}
+
+.premium-contact-enrichment__country-control select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+
+  padding:
+    0
+    26px
+    0
+    4px;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: var(--text-primary, #2c1939);
+
+  direction: rtl;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+
+  appearance: none;
+  cursor: pointer;
+}
+
+.premium-contact-enrichment__country-chevron {
+  position: absolute;
+  inset-inline-end: 9px;
+
+  pointer-events: none;
+
+  font-size: 10px;
+  color: var(--text-muted, #756e7b);
+}
+
+/* Calling code is now visually attached to phone input */
+
+.premium-contact-enrichment__dial-code {
+  display: none;
+}
+
+/* Phone input */
+
+.premium-contact-enrichment__phone
+  + .premium-contact-enrichment__field {
+  position: relative;
+  width: 100%;
+}
+
+/*
+ * Keep normal input behaviour,
+ * but phone input gets a clean international layout.
+ */
+.premium-contact-enrichment__field input[type="tel"] {
+  width: 100%;
+  height: 50px;
+
+  padding-inline: 14px;
+
+  border-radius: 14px;
+
+  direction: ltr;
+  text-align: left;
+}
+
+/* Submit button below both controls */
+
+.premium-contact-enrichment__form
+  > .premium-contact-enrichment__submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 2px;
+}
+
+/* Error text */
+
+.premium-contact-enrichment__phone-error {
+  margin: -2px 4px 0;
+
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+/* Mobile */
+
+@media (max-width: 420px) {
+  .premium-contact-enrichment__phone {
+    grid-template-columns:
+      minmax(108px, 0.9fr)
+      minmax(0, 1.45fr);
+    gap: 8px;
+  }
+
+  .premium-contact-enrichment__country-control select {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 340px) {
+  .premium-contact-enrichment__phone {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   INTERNATIONAL PHONE — FINAL COUNTRY DROPDOWN
+   No search field.
+   Country list uses English names + international codes.
+   ========================================================= */
+
+.premium-phone-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.25fr);
+  gap: 10px;
+
+  width: 100%;
+
+  direction: ltr;
+}
+
+.premium-phone-layout__country,
+.premium-phone-layout__number {
+  display: grid;
+  gap: 6px;
+
+  min-width: 0;
+}
+
+.premium-phone-layout__label {
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-align: left;
+}
+
+.premium-phone-country {
+  position: relative;
+  min-width: 0;
+}
+
+.premium-phone-country__trigger {
+  display: grid;
+  grid-template-columns:
+    28px
+    minmax(0, 1fr)
+    16px;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+  height: 52px;
+
+  padding: 6px 10px;
+
+  border:
+    1px solid
+    rgba(
+      65,
+      41,
+      87,
+      0.13
+    );
+
+  border-radius: 14px;
+
+  background: #fff;
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  direction: ltr;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.premium-phone-country__flag {
+  display: grid;
+  place-items: center;
+
+  font-size: 19px;
+  line-height: 1;
+}
+
+.premium-phone-country__text {
+  display: grid;
+  gap: 1px;
+
+  min-width: 0;
+}
+
+.premium-phone-country__text strong {
+  overflow: hidden;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-phone-country__text span {
+  font-size: 10px;
+  font-weight: 700;
+
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+}
+
+.premium-phone-country__chevron {
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 10px;
+}
+
+.premium-phone-country__menu {
+  position: absolute;
+  z-index: 40;
+
+  top: calc(100% + 6px);
+  left: 0;
+
+  width: min(
+    285px,
+    calc(100vw - 70px)
+  );
+
+  padding: 6px;
+
+  border:
+    1px solid
+    rgba(
+      65,
+      41,
+      87,
+      0.12
+    );
+
+  border-radius: 14px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.99
+    );
+
+  box-shadow:
+    0 14px 34px
+    rgba(
+      40,
+      26,
+      52,
+      0.14
+    );
+}
+
+.premium-phone-country__list {
+  max-height: 245px;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.premium-phone-country__option {
+  display: grid;
+  grid-template-columns:
+    28px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+
+  padding: 9px 8px;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+
+  direction: ltr;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.premium-phone-country__option:hover,
+.premium-phone-country__option.is-active {
+  background:
+    rgba(
+      65,
+      41,
+      87,
+      0.07
+    );
+}
+
+.premium-phone-country__option-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.premium-phone-country__option-name {
+  overflow: hidden;
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-phone-country__option-code {
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  direction: ltr;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.premium-phone-layout__number
+  .premium-contact-enrichment__field {
+  width: 100%;
+}
+
+.premium-phone-layout__number
+  input[type="tel"] {
+  width: 100%;
+  height: 52px;
+
+  direction: ltr;
+  text-align: left;
+
+  font-size: 12px;
+}
+
+@media (max-width: 380px) {
+  .premium-phone-layout {
+    grid-template-columns:
+      minmax(110px, 0.9fr)
+      minmax(0, 1.2fr);
+
+    gap: 8px;
+  }
+
+  .premium-phone-country__trigger {
+    padding-inline: 7px;
+  }
+
+  .premium-phone-country__text strong {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 320px) {
+  .premium-phone-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-phone-country__menu {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   PHONE COUNTRY KEY — COMPACT TRIGGER + SEARCHABLE DROPDOWN
+   Closed state: flag + calling code only.
+   Open state: English country names + flags + calling codes.
+   ========================================================= */
+
+.premium-phone-layout {
+  grid-template-columns:
+    118px
+    minmax(0, 1fr);
+
+  align-items: end;
+}
+
+.premium-phone-country__trigger {
+  grid-template-columns:
+    26px
+    minmax(0, 1fr)
+    12px;
+
+  gap: 6px;
+
+  padding-inline: 9px;
+
+  direction: ltr;
+}
+
+.premium-phone-country__flag {
+  font-size: 18px;
+}
+
+.premium-phone-country__calling-code {
+  overflow: hidden;
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  direction: ltr;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-phone-country__chevron {
+  display: grid;
+  place-items: center;
+
+  font-size: 9px;
+}
+
+.premium-phone-country__menu {
+  width: min(
+    300px,
+    calc(100vw - 62px)
+  );
+
+  padding: 7px;
+}
+
+/* Search */
+
+.premium-phone-country__search {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  margin-bottom: 6px;
+}
+
+.premium-phone-country__search input {
+  width: 100%;
+  height: 40px;
+
+  padding:
+    0
+    12px
+    0
+    34px;
+
+  border:
+    1px solid
+    rgba(
+      65,
+      41,
+      87,
+      0.14
+    );
+
+  border-radius: 9px;
+
+  outline: 0;
+
+  background: #fff;
+
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  direction: ltr;
+  text-align: left;
+
+  font: inherit;
+  font-size: 11px;
+}
+
+.premium-phone-country__search input:focus {
+  border-color:
+    rgba(
+      65,
+      41,
+      87,
+      0.34
+    );
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      65,
+      41,
+      87,
+      0.06
+    );
+}
+
+.premium-phone-country__search-icon {
+  position: absolute;
+  left: 11px;
+
+  z-index: 1;
+
+  pointer-events: none;
+
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 16px;
+}
+
+.premium-phone-country__list {
+  max-height: 235px;
+}
+
+/* Country row */
+
+.premium-phone-country__option {
+  grid-template-columns:
+    26px
+    minmax(0, 1fr)
+    auto;
+
+  min-height: 39px;
+
+  padding:
+    7px
+    8px;
+}
+
+.premium-phone-country__option-name {
+  font-size: 11px;
+}
+
+.premium-phone-country__option-code {
+  min-width: 38px;
+
+  font-size: 10px;
+  text-align: right;
+}
+
+@media (max-width: 380px) {
+  .premium-phone-layout {
+    grid-template-columns:
+      108px
+      minmax(0, 1fr);
+  }
+
+  .premium-phone-country__menu {
+    width: min(
+      285px,
+      calc(100vw - 46px)
+    );
+  }
+}
+
+
+/* =========================================================
+   HUMAN HANDOFF — LIVE RECEIVING STATUS
+   Visual reassurance only.
+   Does not change handoff/API/Chatwoot state.
+   ========================================================= */
+
+.handoff-live-status {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  width: min(92%, 390px);
+
+  margin:
+    8px
+    auto
+    0;
+
+  padding:
+    11px
+    13px;
+
+  border:
+    1px solid
+    rgba(
+      65,
+      41,
+      87,
+      0.08
+    );
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(
+        255,
+        255,
+        255,
+        0.96
+      ),
+      rgba(
+        249,
+        247,
+        250,
+        0.94
+      )
+    );
+
+  box-shadow:
+    0 5px 18px
+    rgba(
+      40,
+      26,
+      52,
+      0.045
+    );
+
+  animation:
+    handoff-live-enter
+    320ms
+    var(--ease-emphasized)
+    backwards;
+}
+
+.handoff-live-status__content {
+  display: grid;
+  gap: 2px;
+
+  min-width: 0;
+
+  text-align: right;
+}
+
+.handoff-live-status__content strong {
+  color:
+    var(
+      --text-primary,
+      #2c1939
+    );
+
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.handoff-live-status__content span {
+  color:
+    var(
+      --text-muted,
+      #756e7b
+    );
+
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+/* Typing-style activity */
+
+.handoff-live-status__typing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  flex: 0 0 34px;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(
+      65,
+      41,
+      87,
+      0.07
+    );
+}
+
+.handoff-live-status__typing span {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    var(
+      --color-primary,
+      #4b265c
+    );
+
+  animation:
+    handoff-live-dot
+    1.15s
+    ease-in-out
+    infinite;
+}
+
+.handoff-live-status__typing span:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.handoff-live-status__typing span:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+/* Settled state */
+
+.handoff-live-status__ready {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 34px;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(
+      65,
+      41,
+      87,
+      0.07
+    );
+
+  color:
+    var(
+      --color-primary,
+      #4b265c
+    );
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@keyframes handoff-live-enter {
+  from {
+    opacity: 0;
+    transform:
+      translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0);
+  }
+}
+
+@keyframes handoff-live-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform:
+      translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform:
+      translateY(-3px);
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .handoff-live-status,
+  .handoff-live-status__typing span {
+    animation:
+      none !important;
+  }
+}

@@ -318,7 +318,7 @@ export async function updatePublicSessionChatwootConversation(
 
 export async function updatePublicSessionService(
   publicSessionId: string,
-  service: Required<SelectedServiceContext>,
+  service: SelectedServiceContext,
 ): Promise<PublicSessionRecord | null> {
   const result =
     await databasePool.query<PublicSessionRow>(

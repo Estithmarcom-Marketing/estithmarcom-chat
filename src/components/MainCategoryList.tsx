@@ -27,23 +27,23 @@ export function MainCategoryList({
       className="main-category-list premium-category-list"
       aria-label="الأقسام الرئيسية"
     >
-      <div className="premium-category-list__heading">
-        <div>
-          <span className="premium-category-list__eyebrow">
-            ابدأ من هنا
-          </span>
-
-          <h2>
-            اختر ما تحتاجه
-          </h2>
-        </div>
-
+      <div className="smart-suggestions__prompt">
         <span
-          className="premium-category-list__badge"
+          className="smart-suggestions__spark"
           aria-hidden="true"
         >
-          {categories.length} مسارات
+          ✦
         </span>
+
+        <div>
+          <strong>
+            كيف نقدر نخدمك اليوم؟
+          </strong>
+
+          <span>
+            اختر المجال الأقرب لطلبك، أو اكتب لي ما تحتاجه بطريقتك.
+          </span>
+        </div>
       </div>
 
       <div className="main-category-list__items">
@@ -58,7 +58,6 @@ export function MainCategoryList({
               } as CSSProperties}
             >
               <MainCategoryCard
-                icon={category.icon}
                 title={category.title}
                 subtitle={category.subtitle}
                 onSelect={() =>

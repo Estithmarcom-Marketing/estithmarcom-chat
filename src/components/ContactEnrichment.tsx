@@ -1,7 +1,18 @@
-﻿import {
-  useState,
+import {
   type FormEvent,
+  useMemo,
+  useState,
 } from 'react'
+
+import {
+  getCountries,
+  getCountryCallingCode,
+  parsePhoneNumberFromString,
+} from 'libphonenumber-js'
+
+import type {
+  CountryCode,
+} from 'libphonenumber-js'
 
 export type ContactField =
   | 'name'
@@ -22,46 +33,85 @@ interface ContactEnrichmentProps {
 const fieldConfig = {
   name: {
     step: '1',
-    eyebrow: 'تعريف بسيط',
-    title: 'كيف تحب نخاطبك؟',
+    eyebrow:
+      'خطوة بسيطة قبل التحويل',
+    title:
+      'كيف تحب أن نخاطبك؟',
     description:
-      'يكفينا اسمك الأول أو الاسم الذي تفضله.',
-    placeholder: 'اكتب الاسم',
-    inputType: 'text',
-    inputMode: 'text',
-    autoComplete: 'name',
-    icon: '👤',
-    direction: 'rtl',
+      'اكتب اسمك الأول أو الاسم الذي تفضله، وبعدها نكمل مباشرة.',
+    placeholder:
+      'اكتب الاسم',
+    inputType:
+      'text',
+    inputMode:
+      'text',
+    autoComplete:
+      'name',
+    icon:
+      '👤',
+    direction:
+      'rtl',
   },
 
   phone: {
     step: '2',
-    eyebrow: 'بيانات التواصل',
-    title: 'ما رقم الجوال المناسب؟',
+    eyebrow:
+      'باقي خطوة واحدة',
+    title:
+      'ما رقم الجوال المناسب للتواصل معك؟',
     description:
-      'نستخدمه فقط لمتابعة طلبك عند الحاجة.',
-    placeholder: 'مثال: 05xxxxxxxx',
-    inputType: 'tel',
-    inputMode: 'tel',
-    autoComplete: 'tel',
-    icon: '☎',
-    direction: 'ltr',
+      'اختر الدولة ثم اكتب رقم الجوال، وسنحفظه بالصيغة الدولية الصحيحة.',
+    placeholder:
+      'Enter mobile number',
+    inputType:
+      'tel',
+    inputMode:
+      'tel',
+    autoComplete:
+      'tel',
+    icon:
+      '☎',
+    direction:
+      'ltr',
   },
 
   email: {
     step: '3',
-    eyebrow: 'آخر خطوة',
-    title: 'ما بريدك الإلكتروني؟',
+    eyebrow:
+      'بيانات إضافية',
+    title:
+      'ما بريدك الإلكتروني؟',
     description:
-      'يساعد الفريق على استكمال بيانات الطلب.',
-    placeholder: 'name@example.com',
-    inputType: 'email',
-    inputMode: 'email',
-    autoComplete: 'email',
-    icon: '✉',
-    direction: 'ltr',
+      'إذا احتجناه لإكمال الطلب، يمكنك إضافته هنا.',
+    placeholder:
+      'name@example.com',
+    inputType:
+      'email',
+    inputMode:
+      'email',
+    autoComplete:
+      'email',
+    icon:
+      '✉',
+    direction:
+      'ltr',
   },
 } as const
+
+function getCountryFlag(
+  countryCode: string,
+) {
+  return countryCode
+    .toUpperCase()
+    .replace(
+      /./g,
+      (character) =>
+        String.fromCodePoint(
+          127397 +
+            character.charCodeAt(0),
+        ),
+    )
+}
 
 export function ContactEnrichment({
   field,
@@ -73,24 +123,154 @@ export function ContactEnrichment({
     setValue,
   ] = useState('')
 
+  const [
+    selectedCountry,
+    setSelectedCountry,
+  ] = useState<CountryCode>('SA')
+
+  const [
+    countryOpen,
+    setCountryOpen,
+  ] = useState(false)
+
+  const [
+    countrySearch,
+    setCountrySearch,
+  ] = useState('')
+
   const config =
     fieldConfig[field]
 
   const cleanValue =
     value.trim()
 
+  const countryNames =
+    useMemo(
+      () =>
+        new Intl.DisplayNames(
+          ['en'],
+          {
+            type: 'region',
+          },
+        ),
+      [],
+    )
+
+  const countries =
+    useMemo(
+      () =>
+        getCountries()
+          .map(
+            (
+              countryCode,
+            ) => ({
+              code:
+                countryCode,
+
+              name:
+                countryNames.of(
+                  countryCode,
+                ) ??
+                countryCode,
+
+              callingCode:
+                getCountryCallingCode(
+                  countryCode,
+                ),
+
+              flag:
+                getCountryFlag(
+                  countryCode,
+                ),
+            }),
+          )
+          .sort(
+            (a, b) =>
+              a.name.localeCompare(
+                b.name,
+                'en',
+              ),
+          ),
+      [
+        countryNames,
+      ],
+    )
+
+  const selectedCountryData =
+    countries.find(
+      (country) =>
+        country.code ===
+        selectedCountry,
+    )
+
+  const normalizedCountrySearch =
+    countrySearch
+      .trim()
+      .toLowerCase()
+      .replace(
+        /^\+/,
+        '',
+      )
+
+  const filteredCountries =
+    normalizedCountrySearch
+      ? countries.filter(
+          (country) =>
+            country.name
+              .toLowerCase()
+              .includes(
+                normalizedCountrySearch,
+              ) ||
+            country.code
+              .toLowerCase()
+              .includes(
+                normalizedCountrySearch,
+              ) ||
+            country.callingCode
+              .includes(
+                normalizedCountrySearch,
+              ),
+        )
+      : countries
+
+  const parsedPhone =
+    field === 'phone' &&
+    cleanValue
+      ? parsePhoneNumberFromString(
+          cleanValue,
+          selectedCountry,
+        )
+      : undefined
+
+  const phoneIsValid =
+    field !== 'phone' ||
+    Boolean(
+      parsedPhone?.isValid(),
+    )
+
+  const fieldIsValid =
+    cleanValue.length > 0 &&
+    phoneIsValid
+
   function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
+    event:
+      FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
 
-    if (!cleanValue) {
+    if (!fieldIsValid) {
       return
     }
 
+    const submittedValue =
+      field === 'phone' &&
+      parsedPhone
+        ? parsedPhone.number
+        : cleanValue
+
     onSubmit?.(
       field,
-      cleanValue,
+      submittedValue,
     )
 
     setValue('')
@@ -131,41 +311,238 @@ export function ContactEnrichment({
         className="premium-contact-enrichment__form"
         onSubmit={handleSubmit}
       >
-        <div className="premium-contact-enrichment__field">
-          <input
-            type={config.inputType}
-            inputMode={config.inputMode}
-            autoComplete={config.autoComplete}
-            value={value}
-            dir={config.direction}
-            onChange={(event) =>
-              setValue(
-                event.target.value,
-              )
-            }
-            placeholder={
-              config.placeholder
-            }
-            aria-label={
-              config.placeholder
-            }
-          />
+        {field === 'phone' ? (
+          <>
+            <div className="premium-phone-layout">
+              <div className="premium-phone-layout__country">
+                <span className="premium-phone-layout__label">
+                  الدولة
+                </span>
 
-          {cleanValue && (
-            <span
-              className="premium-contact-enrichment__valid"
-              aria-hidden="true"
-            >
-              ✓
-            </span>
-          )}
-        </div>
+                <div className="premium-phone-country">
+                  <button
+                    type="button"
+                    className="premium-phone-country__trigger"
+                    onClick={() =>
+                      setCountryOpen(
+                        (current) =>
+                          !current,
+                      )
+                    }
+                    aria-expanded={
+                      countryOpen
+                    }
+                  >
+                    <span className="premium-phone-country__flag">
+                      {
+                        selectedCountryData
+                          ?.flag
+                      }
+                    </span>
+
+                    <strong className="premium-phone-country__calling-code">
+                      +
+                      {
+                        selectedCountryData
+                          ?.callingCode
+                      }
+                    </strong>
+
+                    <span
+                      className="premium-phone-country__chevron"
+                      aria-hidden="true"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {countryOpen && (
+                    <div className="premium-phone-country__menu">
+                      <div className="premium-phone-country__search">
+                        <span
+                          className="premium-phone-country__search-icon"
+                          aria-hidden="true"
+                        >
+                          ⌕
+                        </span>
+
+                        <input
+                          type="search"
+                          value={
+                            countrySearch
+                          }
+                          dir="ltr"
+                          autoComplete="off"
+                          placeholder="Search country or code"
+                          aria-label="Search country or calling code"
+                          onChange={(
+                            event,
+                          ) =>
+                            setCountrySearch(
+                              event.target
+                                .value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="premium-phone-country__list">
+                        {filteredCountries.map(
+                          (
+                            country,
+                          ) => (
+                            <button
+                              key={
+                                country.code
+                              }
+                              type="button"
+                              className={[
+                                'premium-phone-country__option',
+                                country.code ===
+                                selectedCountry
+                                  ? 'is-active'
+                                  : '',
+                              ]
+                                .filter(
+                                  Boolean,
+                                )
+                                .join(
+                                  ' ',
+                                )}
+                              onClick={() => {
+                                setSelectedCountry(
+                                  country.code,
+                                )
+
+                                setCountryOpen(
+                                  false,
+                                )
+
+                                setCountrySearch(
+                                  '',
+                                )
+
+                                setValue('')
+                              }}
+                            >
+                              <span className="premium-phone-country__option-flag">
+                                {
+                                  country.flag
+                                }
+                              </span>
+
+                              <span className="premium-phone-country__option-name">
+                                {
+                                  country.name
+                                }
+                              </span>
+
+                              <span className="premium-phone-country__option-code">
+                                +
+                                {
+                                  country.callingCode
+                                }
+                              </span>
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <label className="premium-phone-layout__number">
+                <span className="premium-phone-layout__label">
+                  رقم الجوال
+                </span>
+
+                <div className="premium-contact-enrichment__field">
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={value}
+                    dir="ltr"
+                    onChange={(
+                      event,
+                    ) =>
+                      setValue(
+                        event.target
+                          .value,
+                      )
+                    }
+                    placeholder="Enter mobile number"
+                    aria-label="Enter mobile number"
+                  />
+
+                  {fieldIsValid && (
+                    <span
+                      className="premium-contact-enrichment__valid"
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                  )}
+                </div>
+              </label>
+            </div>
+
+            {cleanValue &&
+              !phoneIsValid && (
+                <span className="premium-contact-enrichment__phone-error">
+                  تأكد من رقم الجوال بحسب الدولة المختارة.
+                </span>
+              )}
+          </>
+        ) : (
+          <div className="premium-contact-enrichment__field">
+            <input
+              type={
+                config.inputType
+              }
+              inputMode={
+                config.inputMode
+              }
+              autoComplete={
+                config.autoComplete
+              }
+              value={value}
+              dir={
+                config.direction
+              }
+              onChange={(
+                event,
+              ) =>
+                setValue(
+                  event.target
+                    .value,
+                )
+              }
+              placeholder={
+                config.placeholder
+              }
+              aria-label={
+                config.placeholder
+              }
+            />
+
+            {fieldIsValid && (
+              <span
+                className="premium-contact-enrichment__valid"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"
           className="premium-contact-enrichment__submit"
           disabled={
-            cleanValue.length === 0
+            !fieldIsValid
           }
         >
           <span>
@@ -182,7 +559,9 @@ export function ContactEnrichment({
         <button
           type="button"
           className="premium-contact-enrichment__back"
-          onClick={onBack}
+          onClick={
+            onBack
+          }
         >
           <span aria-hidden="true">
             →
@@ -200,7 +579,7 @@ export function ContactEnrichment({
         </span>
 
         <span>
-          نطلب فقط المعلومات الناقصة ولا نكرر البيانات الموجودة لدينا.
+          نطلب فقط المعلومات الناقصة، ونحافظ على ما شاركته معنا حتى لا تضطر لتكراره.
         </span>
       </div>
     </section>

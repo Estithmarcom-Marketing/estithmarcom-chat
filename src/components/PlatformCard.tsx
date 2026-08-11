@@ -1,18 +1,33 @@
-﻿interface PlatformCardProps {
+﻿import type {
+  CSSProperties,
+} from 'react'
+
+interface PlatformCardProps {
   icon?: string
   title: string
+  className?: string
+  style?: CSSProperties
   onSelect?: () => void
 }
 
 export function PlatformCard({
   icon = '◆',
   title,
+  className,
+  style,
   onSelect,
 }: PlatformCardProps) {
   return (
     <button
       type="button"
-      className="platform-card premium-platform-card"
+      className={[
+        'platform-card',
+        'premium-platform-card',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
       onClick={onSelect}
     >
       <span
@@ -27,9 +42,6 @@ export function PlatformCard({
           {title}
         </strong>
 
-        <span className="premium-platform-card__hint">
-          استعرض الخدمات
-        </span>
       </span>
 
       <span

@@ -22,6 +22,8 @@ export interface ChatMessage {
   content: string
   createdAt: string
   status?: MessageStatus
+  contentType?: string
+  contentAttributes?: Record<string, unknown>
 }
 
 export interface CustomerContact {
@@ -75,8 +77,8 @@ export interface UpdateServiceInput {
     categoryName: string
     platformId: string
     platformName: string
-    serviceId: string
-    serviceName: string
+    serviceId?: string
+    serviceName?: string
   }
 }
 

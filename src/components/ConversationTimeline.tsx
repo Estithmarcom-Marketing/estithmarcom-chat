@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   ChatMessage,
 } from '../types'
 
@@ -8,10 +8,15 @@ import {
 
 interface ConversationTimelineProps {
   messages: ChatMessage[]
+
+  onSelectSuggestion?: (
+    value: string,
+  ) => void
 }
 
 export function ConversationTimeline({
   messages,
+  onSelectSuggestion,
 }: ConversationTimelineProps) {
   if (messages.length === 0) {
     return null
@@ -23,12 +28,17 @@ export function ConversationTimeline({
       aria-label="سجل المحادثة"
       aria-live="polite"
     >
-      {messages.map((message) => (
-        <MessageBubble
-          key={message.id}
-          message={message}
-        />
-      ))}
+      {messages.map(
+        (message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onSelectSuggestion={
+              onSelectSuggestion
+            }
+          />
+        ),
+      )}
     </section>
   )
 }

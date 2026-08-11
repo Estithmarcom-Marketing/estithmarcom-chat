@@ -51,6 +51,50 @@ function getMissingContactField(
   return undefined
 }
 
+
+function isHumanHandoffRequest(
+  content: string,
+): boolean {
+  const normalized =
+    content
+      .toLowerCase()
+      .normalize('NFKC')
+      .replace(/[ًٌٍَُِّْـ]/g, '')
+      .replace(/[أإآٱ]/g, 'ا')
+      .replace(
+        /[^a-z0-9\u0600-\u06ff\s]/gi,
+        ' ',
+      )
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  const patterns = [
+    /*
+     * Modern Standard Arabic + Gulf + Yemeni +
+     * Levantine + Egyptian + Sudanese +
+     * Maghrebi + Iraqi variants.
+     */
+    /(?:اريد|ابغى|ابي|ابى|ودي|احتاج|محتاج|عايز|عاوز|بدي|اشتي|نشتي|داير|حاب|حابه|حابب|نحب|بغيت|نبغي|حبيت)\s*(?:اني|ان)?\s*(?:اتواصل|التواصل|تواصل|نتواصل|اكلم|الكلام|اتكلم|التكلم|نتكلم|اتحدث|التحدث|احكي|احجي|احچي|نهدر|نهضر)?\s*(?:مع|ويا|وي)?\s*(?:ال)?(?:موظف|موظفه|مستشار|مستشاره|مسؤول|مسؤوله|مدير|شخص|انسان|احد|حد|دعم|خدمه العملاء)/,
+
+    /(?:حولني|وصلني|اربطني|خليني اتواصل|خلني اتواصل|وصلوني|حولوني)\s*(?:الى|ل|مع)?\s*(?:ال)?(?:موظف|موظفه|مستشار|مسؤول|مدير|خدمه العملاء|الدعم|شخص حقيقي)/,
+
+    /(?:ابي|ابغى|اشتي|بدي|عايز|عاوز|داير|بغيت|نحب|حاب)\s+(?:ال)?(?:موظف|موظفه|مستشار|مسؤول|خدمه العملاء|الدعم)/,
+
+    /(?:خدمه العملاء|دعم بشري|موظف بشري|موظف حقيقي|شخص حقيقي|اكلم الدعم|اتواصل مع الدعم)/,
+
+    /(?:human agent|live agent|customer service|customer support|speak to a human|talk to a human|talk to an agent|connect me to an agent)/i,
+
+    /(?:mitarbeiter sprechen|mit einem mitarbeiter sprechen|kundenservice|kundendienst)/i,
+
+    /(?:abgha|abi|abghi|bghit|3ayz|3awez|badi|m7taj|muhtaj)\s+(?:agent|employee|human|person|mowazaf|موظف)/i,
+  ]
+
+  return patterns.some(
+    (pattern) =>
+      pattern.test(normalized),
+  )
+}
+
 function App() {
   const [
     state,
@@ -64,6 +108,18 @@ function App() {
     specialistRequested,
     setSpecialistRequested,
   ] = useState(false)
+
+  const [
+    handoffContactField,
+    setHandoffContactField,
+  ] = useState<ContactField | undefined>(
+    undefined,
+  )
+
+  const [
+    pendingHandoffQuestion,
+    setPendingHandoffQuestion,
+  ] = useState<string | null>(null)
 
   const [
     humanTimedOut,
@@ -82,9 +138,12 @@ function App() {
 
   const missingContactField =
     specialistRequested
-      ? getMissingContactField(
-          state.context?.contact ??
-            {},
+      ? (
+          handoffContactField ??
+          getMissingContactField(
+            state.context?.contact ??
+              {},
+          )
         )
       : undefined
 
@@ -386,6 +445,36 @@ function App() {
   async function handleSendMessage(
     content: string,
   ) {
+    const cleanContent =
+      content.trim()
+
+    if (!cleanContent) {
+      return
+    }
+
+    /*
+     * A customer can request a human either by
+     * pressing the specialist button or by typing
+     * the request in the composer.
+     *
+     * Both paths MUST use the same contact
+     * enrichment gate before the real handoff
+     * message reaches Chatwoot/n8n.
+     */
+    if (
+      state.context?.mode ===
+        'assistant' &&
+      isHumanHandoffRequest(
+        cleanContent,
+      )
+    ) {
+      await handleRequestSpecialist(
+        cleanContent,
+      )
+
+      return
+    }
+
     try {
       const message =
         await apiChatService.sendMessage({
@@ -393,7 +482,8 @@ function App() {
             state.context
               ?.conversationId,
 
-          content,
+          content:
+            cleanContent,
         })
 
       dispatch({
@@ -434,9 +524,7 @@ function App() {
       !service.categoryId ||
       !service.categoryName ||
       !service.platformId ||
-      !service.platformName ||
-      !service.serviceId ||
-      !service.serviceName
+      !service.platformName
     ) {
       return
     }
@@ -482,13 +570,20 @@ function App() {
     }
   }
 
-  async function completeHandoff() {
+  async function completeHandoff(
+    originalQuestion?: string,
+  ) {
     if (
       state.context?.mode !==
       'assistant'
     ) {
       return
     }
+
+    const handoffQuestion =
+      originalQuestion?.trim() ||
+      pendingHandoffQuestion?.trim() ||
+      'أريد التحدث مع موظف مختص'
 
     const context =
       await apiChatService.requestSpecialist({
@@ -500,11 +595,23 @@ function App() {
           'طلب العميل التحدث مع موظف مختص',
 
         originalQuestion:
-          'أريد التحدث مع موظف مختص',
+          handoffQuestion,
 
         intent:
           'human_handoff',
       })
+
+    setPendingHandoffQuestion(
+      null,
+    )
+
+    setSpecialistRequested(
+      false,
+    )
+
+    setHandoffContactField(
+      undefined,
+    )
 
     dispatch({
       type:
@@ -515,9 +622,24 @@ function App() {
     })
   }
 
-  async function handleRequestSpecialist() {
+  async function handleRequestSpecialist(
+    originalQuestion =
+      'أريد التحدث مع موظف مختص',
+  ) {
+    const cleanQuestion =
+      originalQuestion.trim() ||
+      'أريد التحدث مع موظف مختص'
+
+    setPendingHandoffQuestion(
+      cleanQuestion,
+    )
+
     setSpecialistRequested(
       true,
+    )
+
+    setHandoffContactField(
+      'name',
     )
 
     const currentContact =
@@ -529,16 +651,15 @@ function App() {
         currentContact,
       )
 
-    if (!missingField) {
-      try {
-        await completeHandoff()
-      } catch (error) {
-        console.error(
-          'Failed to request specialist',
-          error,
-        )
-      }
-    }
+    /*
+     * A new handoff flow always starts from the
+     * name step, even if contact data exists from
+     * an earlier session.
+     *
+     * Existing values remain stored and are simply
+     * refreshed by the customer.
+     */
+    void missingField
   }
 
   async function handleContactField(
@@ -566,13 +687,28 @@ function App() {
           updatedContext,
       })
 
+      if (field === 'name') {
+        setHandoffContactField(
+          'phone',
+        )
+
+        return
+      }
+
+      setHandoffContactField(
+        undefined,
+      )
+
       const nextMissingField =
         getMissingContactField(
           updatedContext.contact,
         )
 
       if (!nextMissingField) {
-        await completeHandoff()
+        await completeHandoff(
+          pendingHandoffQuestion ??
+            undefined,
+        )
       }
     } catch (error) {
       console.error(
@@ -698,14 +834,14 @@ function App() {
             message,
           )
         }}
-        onSelectService={(service) => {
-          void handleSelectService(
+        onSelectService={(service) =>
+          handleSelectService(
             service,
           )
-        }}
-        onRequestSpecialist={() => {
-          void handleRequestSpecialist()
-        }}
+        }
+        onRequestSpecialist={() =>
+          handleRequestSpecialist()
+        }
         onSubmitContactField={(
           field,
           value,
@@ -718,6 +854,14 @@ function App() {
         onCancelContactEnrichment={() => {
           setSpecialistRequested(
             false,
+          )
+
+          setHandoffContactField(
+            undefined,
+          )
+
+          setPendingHandoffQuestion(
+            null,
           )
         }}
         onSubmitPreferredContactTime={(
