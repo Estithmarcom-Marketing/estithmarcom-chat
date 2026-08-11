@@ -1,22 +1,103 @@
-﻿import type {
+import type {
   ChatMessage,
 } from '../types'
 
 interface MessageBubbleProps {
   message: ChatMessage
+
+  onSelectSuggestion?: (
+    value: string,
+  ) => void
+}
+
+interface MessageSuggestion {
+  title: string
+  value: string
+}
+
+function getMessageSuggestions(
+  message: ChatMessage,
+): MessageSuggestion[] {
+  if (
+    message.author !==
+      'assistant' ||
+    message.contentType !==
+      'input_select'
+  ) {
+    return []
+  }
+
+  const rawItems =
+    message
+      .contentAttributes
+      ?.items
+
+  if (!Array.isArray(rawItems)) {
+    return []
+  }
+
+  return rawItems
+    .map((item) => {
+      if (
+        !item ||
+        typeof item !==
+          'object'
+      ) {
+        return null
+      }
+
+      const record =
+        item as Record<
+          string,
+          unknown
+        >
+
+      const title =
+        typeof record.title ===
+        'string'
+          ? record.title.trim()
+          : ''
+
+      const value =
+        typeof record.value ===
+        'string'
+          ? record.value.trim()
+          : ''
+
+      if (
+        !title ||
+        !value
+      ) {
+        return null
+      }
+
+      return {
+        title,
+        value,
+      }
+    })
+    .filter(
+      (
+        item,
+      ): item is MessageSuggestion =>
+        item !== null,
+    )
 }
 
 export function MessageBubble({
   message,
+  onSelectSuggestion,
 }: MessageBubbleProps) {
   const isAssistant =
-    message.author === 'assistant'
+    message.author ===
+    'assistant'
 
   const isHuman =
     message.author === 'human'
 
   const isCustomer =
-    message.author === 'customer'
+    message.author ===
+    'customer'
 
   const label =
     isAssistant
@@ -31,6 +112,11 @@ export function MessageBubble({
       : isHuman
         ? '👤'
         : undefined
+
+  const suggestions =
+    getMessageSuggestions(
+      message,
+    )
 
   return (
     <article
@@ -66,6 +152,33 @@ export function MessageBubble({
         {message.content}
       </div>
 
+      {suggestions.length > 0 && (
+        <div
+          className="premium-message-bubble__suggestions"
+          aria-label="خيارات مقترحة"
+        >
+          {suggestions.map(
+            (
+              suggestion,
+              index,
+            ) => (
+              <button
+                key={`${message.id}-${index}-${suggestion.value}`}
+                type="button"
+                className="premium-message-bubble__suggestion"
+                onClick={() => {
+                  onSelectSuggestion?.(
+                    suggestion.value,
+                  )
+                }}
+              >
+                {suggestion.title}
+              </button>
+            ),
+          )}
+        </div>
+      )}
+
       <div className="premium-message-bubble__meta">
         <time
           dateTime={message.createdAt}
@@ -77,7 +190,9 @@ export function MessageBubble({
               minute: '2-digit',
             },
           ).format(
-            new Date(message.createdAt),
+            new Date(
+              message.createdAt,
+            ),
           )}
         </time>
 

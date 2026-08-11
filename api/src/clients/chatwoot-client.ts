@@ -72,6 +72,7 @@ export interface ChatwootRestoredMessage {
   createdAt: string
   senderType?: string
   senderId?: number
+  contentType?: string
   contentAttributes: ChatwootMessageContentAttributes
 }
 
@@ -599,6 +600,9 @@ export async function loadChatwootWidgetMessages(
 
         senderId:
           message.sender?.id,
+
+        contentType:
+          message.content_type,
 
         contentAttributes:
           message.content_attributes ?? {},

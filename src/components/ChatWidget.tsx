@@ -1,5 +1,7 @@
 ﻿import {
+  useEffect,
   useReducer,
+  useState,
 } from 'react'
 
 import type {
@@ -24,6 +26,10 @@ import {
 } from '../state'
 
 import {
+  HandoffLiveStatus,
+} from './HandoffLiveStatus'
+
+import {
   ChatComposer,
   ChatHeader,
   ChatLauncher,
@@ -37,6 +43,7 @@ import {
   ServiceConfirmationScreen,
   ServiceListScreen,
   SpecialistButton,
+  TypingIndicator,
   WelcomeCard,
 } from './index'
 
@@ -65,9 +72,9 @@ interface ChatWidgetProps {
 
   onSelectService: (
     service: SelectedServiceContext,
-  ) => void
+  ) => Promise<void>
 
-  onRequestSpecialist: () => void
+  onRequestSpecialist: () => Promise<void>
 
   onSubmitContactField: (
     field: ContactField,
@@ -109,6 +116,94 @@ export function ChatWidget({
     navigationReducer,
     initialNavigationState,
   )
+
+  const [
+    initialGreetingReady,
+    setInitialGreetingReady,
+  ] = useState(false)
+
+  const [
+    initialOptionsTyping,
+    setInitialOptionsTyping,
+  ] = useState(false)
+
+  const [
+    initialOptionsReady,
+    setInitialOptionsReady,
+  ] = useState(false)
+
+  const [
+    visitedCategoryIds,
+    setVisitedCategoryIds,
+  ] = useState<Set<string>>(
+    () => new Set(),
+  )
+
+  const [
+    skipCurrentCategoryReveal,
+    setSkipCurrentCategoryReveal,
+  ] = useState(false)
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      isMinimized ||
+      messages.length > 0
+    ) {
+      setInitialGreetingReady(false)
+      setInitialOptionsTyping(false)
+      setInitialOptionsReady(false)
+
+      return
+    }
+
+    setInitialGreetingReady(false)
+    setInitialOptionsTyping(false)
+    setInitialOptionsReady(false)
+
+    const greetingTimer =
+      window.setTimeout(
+        () => {
+          setInitialGreetingReady(true)
+        },
+        1800,
+      )
+
+    const optionsTypingTimer =
+      window.setTimeout(
+        () => {
+          setInitialOptionsTyping(true)
+        },
+        3200,
+      )
+
+    const optionsReadyTimer =
+      window.setTimeout(
+        () => {
+          setInitialOptionsTyping(false)
+          setInitialOptionsReady(true)
+        },
+        5000,
+      )
+
+    return () => {
+      window.clearTimeout(
+        greetingTimer,
+      )
+
+      window.clearTimeout(
+        optionsTypingTimer,
+      )
+
+      window.clearTimeout(
+        optionsReadyTimer,
+      )
+    }
+  }, [
+    isOpen,
+    isMinimized,
+    messages.length,
+  ])
 
   if (!isOpen) {
     return (
@@ -285,6 +380,13 @@ export function ChatWidget({
             messages={
               messages
             }
+            onSelectSuggestion={(
+              value,
+            ) => {
+              onSendMessage(
+                value,
+              )
+            }}
           />
 
           {isCollectingContact &&
@@ -296,9 +398,13 @@ export function ChatWidget({
                 onSubmit={
                   onSubmitContactField
                 }
-                onBack={
-                  onCancelContactEnrichment
-                }
+                onBack={() => {
+                  setSkipCurrentCategoryReveal(
+                    true,
+                  )
+
+                  onCancelContactEnrichment()
+                }}
               />
             )}
 
@@ -325,9 +431,13 @@ export function ChatWidget({
             !humanConnected &&
             !preferredContactTime &&
             !humanTimedOut && (
-              <HandoffSystemCard
-                variant="handoff-complete"
-              />
+              <>
+                <HandoffSystemCard
+                  variant="handoff-complete"
+                />
+
+                <HandoffLiveStatus />
+              </>
             )}
 
           {!isCollectingContact &&
@@ -359,22 +469,75 @@ export function ChatWidget({
           {!isCollectingContact &&
             !isHandoffPending &&
             !isHumanMode &&
-            showWelcome && (
+            showWelcome &&
+            messages.length === 0 &&
+            !initialGreetingReady && (
+              <TypingIndicator
+                actor="assistant"
+              />
+            )}
+
+          {!isCollectingContact &&
+            !isHandoffPending &&
+            !isHumanMode &&
+            showWelcome &&
+            messages.length === 0 &&
+            initialGreetingReady && (
               <>
                 <WelcomeCard />
 
-                <MainCategoryList
-                  onSelectCategory={(
-                    categoryId,
-                  ) => {
-                    dispatchNavigation({
-                      type:
-                        'SELECT_CATEGORY',
+                {initialOptionsTyping && (
+                  <TypingIndicator
+                    actor="assistant"
+                  />
+                )}
 
+                {initialOptionsReady && (
+                  <MainCategoryList
+                    onSelectCategory={(
                       categoryId,
-                    })
-                  }}
-                />
+                    ) => {
+                      const alreadyVisited =
+                        visitedCategoryIds.has(
+                          categoryId,
+                        )
+
+                      setSkipCurrentCategoryReveal(
+                        alreadyVisited,
+                      )
+
+                      setVisitedCategoryIds(
+                        (current) => {
+                          if (
+                            current.has(
+                              categoryId,
+                            )
+                          ) {
+                            return current
+                          }
+
+                          const next =
+                            new Set(
+                              current,
+                            )
+
+                          next.add(
+                            categoryId,
+                          )
+
+                          return next
+                        },
+                      )
+
+                      dispatchNavigation({
+                        type:
+                          'SELECT_CATEGORY',
+
+                        categoryId,
+                      })
+                    }}
+                  />
+                )}
               </>
             )}
 
@@ -387,21 +550,57 @@ export function ChatWidget({
                 categoryId={
                   navigation.categoryId
                 }
+                skipConversationalReveal={
+                  skipCurrentCategoryReveal
+                }
                 onBackHome={() => {
                   dispatchNavigation({
                     type:
                       'RESET',
                   })
                 }}
-                onSelectPlatform={(
+                onSelectPlatform={async (
                   platformId,
                 ) => {
-                  dispatchNavigation({
-                    type:
-                      'SELECT_PLATFORM',
+                  const categoryId =
+                    navigation.categoryId
 
-                    platformId,
+                  if (!categoryId) {
+                    return
+                  }
+
+                  const category =
+                    getCategoryById(
+                      categoryId,
+                    )
+
+                  const group =
+                    getGroupById(
+                      platformId,
+                    )
+
+                  if (
+                    !category ||
+                    !group
+                  ) {
+                    return
+                  }
+
+                  await onSelectService({
+                    categoryId:
+                      category.id,
+
+                    categoryName:
+                      category.title,
+
+                    platformId:
+                      group.id,
+
+                    platformName:
+                      group.title,
                   })
+
+                  await onRequestSpecialist()
                 }}
               />
             )}
@@ -475,7 +674,13 @@ export function ChatWidget({
         {!isCollectingContact &&
           !isHandoffPending &&
           !isHumanMode &&
-          !showServiceDetail && (
+          !showServiceDetail &&
+          !(
+            showWelcome &&
+            messages.length === 0
+          ) &&
+          !showCategoryGroups &&
+          !showServices && (
             <SpecialistButton
               onClick={
                 onRequestSpecialist

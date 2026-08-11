@@ -114,6 +114,7 @@ function mapRestoredMessageAuthor(
   input: {
     messageType: number
     createdAt: string
+    senderType?: string
     estithmarcomOrigin?: string
     humanModeStartedAt?: string | null
   },
@@ -140,7 +141,16 @@ function mapRestoredMessageAuthor(
     return 'assistant'
   }
 
-  if (input.humanModeStartedAt) {
+  const normalizedSenderType =
+    input.senderType
+      ?.trim()
+      .toLowerCase()
+
+  if (
+    normalizedSenderType ===
+      'user' &&
+    input.humanModeStartedAt
+  ) {
     const messageTime =
       Date.parse(
         input.createdAt,
@@ -493,6 +503,9 @@ export async function loadConversation(
                 createdAt:
                   message.createdAt,
 
+                senderType:
+                  message.senderType,
+
                 estithmarcomOrigin:
                   typeof origin === 'string'
                     ? origin
@@ -511,6 +524,12 @@ export async function loadConversation(
 
             status:
               'sent',
+
+            contentType:
+              message.contentType,
+
+            contentAttributes:
+              message.contentAttributes,
           }
         },
       )

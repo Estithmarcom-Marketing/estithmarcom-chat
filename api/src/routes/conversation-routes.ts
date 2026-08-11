@@ -24,8 +24,8 @@ interface UpdateServiceBody {
   categoryName: string
   platformId: string
   platformName: string
-  serviceId: string
-  serviceName: string
+  serviceId?: string
+  serviceName?: string
 }
 
 interface UpdateContactBody {
@@ -81,8 +81,6 @@ const updateServiceBodySchema = {
     'categoryName',
     'platformId',
     'platformName',
-    'serviceId',
-    'serviceName',
   ],
   properties: {
     categoryId: {

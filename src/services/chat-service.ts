@@ -28,8 +28,8 @@ export interface SelectServiceInput {
   platformId: string
   platformName: string
 
-  serviceId: string
-  serviceName: string
+  serviceId?: string
+  serviceName?: string
 }
 
 export interface RequestSpecialistInput {

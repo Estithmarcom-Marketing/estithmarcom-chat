@@ -12,19 +12,19 @@ const quickOptions = [
   {
     value: 'خلال اليوم',
     title: 'خلال اليوم',
-    hint: 'في أقرب وقت متاح',
+    hint: 'يتواصل معك الفريق في أقرب فرصة متاحة',
     icon: '☀',
   },
   {
     value: 'مساءً',
     title: 'مساءً',
-    hint: 'بعد ساعات العمل',
+    hint: 'يفضل التواصل معك خلال الفترة المسائية',
     icon: '☾',
   },
   {
     value: 'غدًا',
     title: 'غدًا',
-    hint: 'خلال اليوم التالي',
+    hint: 'يفضل التواصل معك خلال يوم غد',
     icon: '↗',
   },
 ] as const
@@ -57,15 +57,15 @@ export function PreferredContactTime({
 
         <div>
           <span className="premium-preferred-contact__eyebrow">
-            طلبك محفوظ لدى الفريق
+            تعذر توصيلك بالمختص الآن
           </span>
 
           <h2>
-            ما نحب نخليك تنتظر
+            المستشار المختص مشغول في الوقت الحالي
           </h2>
 
           <p>
-            المختص قد يكون مشغولًا الآن، اختر الوقت الأنسب للتواصل معك.
+            استلمنا طلبك، وسيتم التواصل معك من المستشار المختص. اختر الوقت الأنسب لك.
           </p>
         </div>
       </div>
@@ -86,11 +86,11 @@ export function PreferredContactTime({
 
       <div className="premium-preferred-contact__heading">
         <span>
-          الوقت المفضل
+          تحديد وقت التواصل
         </span>
 
         <strong>
-          متى يناسبك التواصل؟
+          متى تحب أن يتواصل معك المستشار المختص؟
         </strong>
       </div>
 
@@ -153,7 +153,7 @@ export function PreferredContactTime({
             </strong>
 
             <span>
-              اختر وقتًا مناسبًا لك
+              اكتب الوقت الذي يناسبك
             </span>
           </span>
         </button>
@@ -163,7 +163,7 @@ export function PreferredContactTime({
         <div className="preferred-contact__custom premium-preferred-contact__custom">
           <label>
             <span>
-              اكتب الوقت المناسب
+              الوقت المناسب للتواصل
             </span>
 
             <input
@@ -174,7 +174,7 @@ export function PreferredContactTime({
                   event.target.value,
                 )
               }
-              placeholder="مثال: اليوم بعد 5 مساءً"
+              placeholder="مثال: اليوم الساعة 5 مساءً"
             />
           </label>
 
@@ -210,7 +210,7 @@ export function PreferredContactTime({
         </span>
 
         <span>
-          هذا هو الوقت المفضل للتواصل وليس موعدًا مؤكدًا.
+          سنحفظ الوقت الذي تفضله للتواصل، وهو ليس موعدًا مؤكدًا حتى يؤكده المستشار المختص.
         </span>
       </div>
     </section>

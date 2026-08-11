@@ -1,4 +1,4 @@
-﻿import {
+import {
   Breadcrumb,
 } from './Breadcrumb'
 
@@ -56,7 +56,7 @@ export function ServiceConfirmationScreen({
 
         <div>
           <span className="premium-service-confirmation__eyebrow">
-            تم تحديد الخدمة
+            ممتاز، فهمت طلبك 👍
           </span>
 
           <h2>
@@ -64,7 +64,7 @@ export function ServiceConfirmationScreen({
           </h2>
 
           <p>
-            ضمن {groupName}
+            ضمن مسار «{groupName}»
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function ServiceConfirmationScreen({
           </span>
 
           <strong>
-            نجهز طلبك للمختص
+            أوصلك للمختص المناسب
           </strong>
         </div>
 
@@ -88,11 +88,11 @@ export function ServiceConfirmationScreen({
 
             <div>
               <strong>
-                تم اختيار الخدمة
+                الخدمة أصبحت واضحة
               </strong>
 
               <p>
-                سنحتفظ بالخدمة المختارة داخل سياق المحادثة.
+                حفظت اختيارك حتى لا تحتاج لإعادة شرح طلبك للموظف.
               </p>
             </div>
           </div>
@@ -104,11 +104,11 @@ export function ServiceConfirmationScreen({
 
             <div>
               <strong>
-                استكمال التفاصيل
+                أحتاج فقط بيانات التواصل الناقصة
               </strong>
 
               <p>
-                المختص يكمل معك حسب حالة طلبك واحتياجك.
+                سنطلب الاسم ورقم الجوال فقط إذا لم يكونا موجودين لدينا.
               </p>
             </div>
           </div>
@@ -120,11 +120,11 @@ export function ServiceConfirmationScreen({
 
             <div>
               <strong>
-                المتابعة من نفس المحادثة
+                نكمل من نفس النقطة
               </strong>
 
               <p>
-                لا تحتاج لإعادة شرح الخدمة من البداية.
+                بعد اكتمال البيانات، أحولك مباشرة للمختص ليكمل معك من هنا.
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export function ServiceConfirmationScreen({
         </span>
 
         <p>
-          سنطلب فقط المعلومات الناقصة قبل تحويلك للمختص.
+          لن نكرر عليك المعلومات الموجودة، وسنطلب فقط ما نحتاجه لإكمال التحويل.
         </p>
       </div>
 
@@ -152,7 +152,7 @@ export function ServiceConfirmationScreen({
           </span>
 
           <span>
-            متابعة مع مختص
+            متابعة مع المختص
           </span>
 
           <span aria-hidden="true">
