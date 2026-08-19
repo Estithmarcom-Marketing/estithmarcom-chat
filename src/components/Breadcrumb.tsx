@@ -1,4 +1,6 @@
-﻿interface BreadcrumbProps {
+﻿import { ChevronLeft } from 'lucide-react'
+
+interface BreadcrumbProps {
   items: Array<{
     id: string
     label: string
@@ -12,38 +14,19 @@ export function Breadcrumb({
   onNavigate,
 }: BreadcrumbProps) {
   return (
-    <nav
-      className="chat-breadcrumb"
-      aria-label="مسار التنقل"
-    >
+    <nav className="flex items-center gap-1 px-4 py-2.5 text-xs text-text-muted border-b border-gray-100" aria-label="مسار التنقل">
       {items.map((item, index) => (
-        <span
-          key={item.id}
-          className="chat-breadcrumb__item"
-        >
+        <span key={item.id} className="flex items-center gap-1">
           {index > 0 && (
-            <span
-              className="chat-breadcrumb__separator"
-              aria-hidden="true"
-            >
-              ‹
-            </span>
+            <ChevronLeft className="w-3 h-3 text-text-soft rtl:rotate-180" />
           )}
-
           {item.current ? (
-            <span
-              className="chat-breadcrumb__current"
-              aria-current="page"
-            >
-              {item.label}
-            </span>
+            <span className="font-bold text-gray-800" aria-current="page">{item.label}</span>
           ) : (
             <button
               type="button"
-              className="chat-breadcrumb__button"
-              onClick={() =>
-                onNavigate?.(item.id)
-              }
+              className="font-semibold text-secondary hover:underline transition-colors"
+              onClick={() => onNavigate?.(item.id)}
             >
               {item.label}
             </button>

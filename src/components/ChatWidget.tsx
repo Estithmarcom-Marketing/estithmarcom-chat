@@ -1,33 +1,12 @@
-﻿import {
-  useEffect,
-  useReducer,
-  useState,
-} from 'react'
+﻿import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
-import type {
-  ChatMessage,
-  ChatMode,
-  SelectedServiceContext,
-} from '../types'
+import type { ChatMessage, ChatMode, SelectedServiceContext } from '../types'
+import type { ContactField } from './ContactEnrichment'
 
-import type {
-  ContactField,
-} from './ContactEnrichment'
+import { getCategoryById, getGroupById, getServiceById } from '../catalog/catalog-selectors'
+import { initialNavigationState, navigationReducer } from '../state'
 
-import {
-  getCategoryById,
-  getGroupById,
-  getServiceById,
-} from '../catalog/catalog-selectors'
-
-import {
-  initialNavigationState,
-  navigationReducer,
-} from '../state'
-
-import {
-  HandoffLiveStatus,
-} from './HandoffLiveStatus'
+import { HandoffLiveStatus } from './HandoffLiveStatus'
 
 import {
   ChatComposer,
@@ -50,43 +29,22 @@ import {
 interface ChatWidgetProps {
   isOpen: boolean
   isMinimized: boolean
-
   mode: ChatMode
-
   humanConnected: boolean
   humanTimedOut: boolean
-
   preferredContactTime?: string
   missingContactField?: ContactField
-
   messages: ChatMessage[]
-
   onOpen: () => void
   onClose: () => void
   onMinimize: () => void
   onRestore: () => void
-
-  onSendMessage: (
-    message: string,
-  ) => void
-
-  onSelectService: (
-    service: SelectedServiceContext,
-  ) => Promise<void>
-
+  onSendMessage: (message: string) => void
+  onSelectService: (service: SelectedServiceContext) => Promise<void>
   onRequestSpecialist: () => Promise<void>
-
-  onSubmitContactField: (
-    field: ContactField,
-    value: string,
-  ) => void
-
-  onCancelContactEnrichment:
-    () => void
-
-  onSubmitPreferredContactTime: (
-    preferredTime: string,
-  ) => void
+  onSubmitContactField: (field: ContactField, value: string) => void
+  onCancelContactEnrichment: () => void
+  onSubmitPreferredContactTime: (preferredTime: string) => void
 }
 
 export function ChatWidget({
@@ -109,591 +67,198 @@ export function ChatWidget({
   onCancelContactEnrichment,
   onSubmitPreferredContactTime,
 }: ChatWidgetProps) {
-  const [
-    navigation,
-    dispatchNavigation,
-  ] = useReducer(
-    navigationReducer,
-    initialNavigationState,
-  )
+  const [navigation, dispatchNavigation] = useReducer(navigationReducer, initialNavigationState)
+  const [initialGreetingReady, setInitialGreetingReady] = useState(false)
+  const [initialOptionsTyping, setInitialOptionsTyping] = useState(false)
+  const [initialOptionsReady, setInitialOptionsReady] = useState(false)
+  const [visitedCategoryIds, setVisitedCategoryIds] = useState<Set<string>>(() => new Set())
+  const [skipCurrentCategoryReveal, setSkipCurrentCategoryReveal] = useState(false)
 
-  const [
-    initialGreetingReady,
-    setInitialGreetingReady,
-  ] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const [
-    initialOptionsTyping,
-    setInitialOptionsTyping,
-  ] = useState(false)
-
-  const [
-    initialOptionsReady,
-    setInitialOptionsReady,
-  ] = useState(false)
-
-  const [
-    visitedCategoryIds,
-    setVisitedCategoryIds,
-  ] = useState<Set<string>>(
-    () => new Set(),
-  )
-
-  const [
-    skipCurrentCategoryReveal,
-    setSkipCurrentCategoryReveal,
-  ] = useState(false)
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    })
+  }, [])
 
   useEffect(() => {
-    if (
-      !isOpen ||
-      isMinimized ||
-      messages.length > 0
-    ) {
+    scrollToBottom()
+  }, [messages.length, scrollToBottom])
+
+  useEffect(() => {
+    if (!isOpen || isMinimized || messages.length > 0) {
       setInitialGreetingReady(false)
       setInitialOptionsTyping(false)
       setInitialOptionsReady(false)
-
       return
     }
-
     setInitialGreetingReady(false)
     setInitialOptionsTyping(false)
     setInitialOptionsReady(false)
+    const t1 = window.setTimeout(() => { setInitialGreetingReady(true); scrollToBottom() }, 1800)
+    const t2 = window.setTimeout(() => { setInitialOptionsTyping(true); scrollToBottom() }, 3200)
+    const t3 = window.setTimeout(() => { setInitialOptionsTyping(false); setInitialOptionsReady(true); scrollToBottom() }, 5000)
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
+  }, [isOpen, isMinimized, messages.length])
 
-    const greetingTimer =
-      window.setTimeout(
-        () => {
-          setInitialGreetingReady(true)
-        },
-        1800,
-      )
+  if (!isOpen) return <ChatLauncher onOpen={onOpen} />
+  if (isMinimized) return <ChatLauncher onOpen={onRestore} />
 
-    const optionsTypingTimer =
-      window.setTimeout(
-        () => {
-          setInitialOptionsTyping(true)
-        },
-        3200,
-      )
+  const showWelcome = navigation.screen === 'welcome'
+  const showCategoryGroups = navigation.screen === 'platforms' && Boolean(navigation.categoryId)
+  const showServices = navigation.screen === 'services' && Boolean(navigation.categoryId) && Boolean(navigation.platformId)
+  const showServiceDetail = navigation.screen === 'service-detail' && Boolean(navigation.categoryId) && Boolean(navigation.platformId) && Boolean(navigation.serviceId)
 
-    const optionsReadyTimer =
-      window.setTimeout(
-        () => {
-          setInitialOptionsTyping(false)
-          setInitialOptionsReady(true)
-        },
-        5000,
-      )
+  const selectedCategory = navigation.categoryId ? getCategoryById(navigation.categoryId) : undefined
+  const selectedGroup = navigation.platformId ? getGroupById(navigation.platformId) : undefined
+  const selectedService = navigation.serviceId ? getServiceById(navigation.serviceId) : undefined
 
-    return () => {
-      window.clearTimeout(
-        greetingTimer,
-      )
+  const isHandoffPending = mode === 'handoff_pending'
+  const isHumanMode = mode === 'human'
+  const isCollectingContact = Boolean(missingContactField)
 
-      window.clearTimeout(
-        optionsTypingTimer,
-      )
-
-      window.clearTimeout(
-        optionsReadyTimer,
-      )
-    }
-  }, [
-    isOpen,
-    isMinimized,
-    messages.length,
-  ])
-
-  if (!isOpen) {
-    return (
-      <ChatLauncher
-        onOpen={onOpen}
-      />
-    )
-  }
-
-  if (isMinimized) {
-    return (
-      <ChatLauncher
-        onOpen={onRestore}
-      />
-    )
-  }
-
-  const showWelcome =
-    navigation.screen ===
-    'welcome'
-
-  const showCategoryGroups =
-    navigation.screen ===
-      'platforms' &&
-    Boolean(
-      navigation.categoryId,
-    )
-
-  const showServices =
-    navigation.screen ===
-      'services' &&
-    Boolean(
-      navigation.categoryId,
-    ) &&
-    Boolean(
-      navigation.platformId,
-    )
-
-  const showServiceDetail =
-    navigation.screen ===
-      'service-detail' &&
-    Boolean(
-      navigation.categoryId,
-    ) &&
-    Boolean(
-      navigation.platformId,
-    ) &&
-    Boolean(
-      navigation.serviceId,
-    )
-
-  const selectedCategory =
-    navigation.categoryId
-      ? getCategoryById(
-          navigation.categoryId,
-        )
-      : undefined
-
-  const selectedGroup =
-    navigation.platformId
-      ? getGroupById(
-          navigation.platformId,
-        )
-      : undefined
-
-  const selectedService =
-    navigation.serviceId
-      ? getServiceById(
-          navigation.serviceId,
-        )
-      : undefined
-
-  const isHandoffPending =
-    mode ===
-    'handoff_pending'
-
-  const isHumanMode =
-    mode ===
-    'human'
-
-  const isCollectingContact =
-    Boolean(
-      missingContactField,
-    )
-
-  function handleSelectService(
-    serviceId: string,
-  ) {
-    dispatchNavigation({
-      type:
-        'SELECT_SERVICE',
-
-      serviceId,
-    })
-
-    const categoryId =
-      navigation.categoryId
-
-    const groupId =
-      navigation.platformId
-
-    if (
-      !categoryId ||
-      !groupId
-    ) {
-      return
-    }
-
-    const category =
-      getCategoryById(
-        categoryId,
-      )
-
-    const group =
-      getGroupById(
-        groupId,
-      )
-
-    const service =
-      getServiceById(
-        serviceId,
-      )
-
-    if (
-      !category ||
-      !group ||
-      !service
-    ) {
-      return
-    }
-
+  function handleSelectService(serviceId: string) {
+    dispatchNavigation({ type: 'SELECT_SERVICE', serviceId })
+    const categoryId = navigation.categoryId
+    const groupId = navigation.platformId
+    if (!categoryId || !groupId) return
+    const category = getCategoryById(categoryId)
+    const group = getGroupById(groupId)
+    const service = getServiceById(serviceId)
+    if (!category || !group || !service) return
     onSelectService({
-      categoryId:
-        category.id,
-
-      categoryName:
-        category.title,
-
-      platformId:
-        group.id,
-
-      platformName:
-        group.title,
-
-      serviceId:
-        service.id,
-
-      serviceName:
-        service.title,
+      categoryId: category.id, categoryName: category.title,
+      platformId: group.id, platformName: group.title,
+      serviceId: service.id, serviceName: service.title,
     })
   }
 
   return (
-    <section
-      className="chat-widget"
-      aria-label="محادثة استثماركوم"
-    >
-      <ChatHeader
-        mode={mode}
-        humanConnected={
-          humanConnected
-        }
-        onMinimize={
-          onMinimize
-        }
-        onClose={
-          onClose
-        }
-      />
+    <>
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
-      <div className="chat-widget__body">
-        <div className="chat-widget__content">
-          <ConversationTimeline
-            messages={
-              messages
-            }
-            onSelectSuggestion={(
-              value,
-            ) => {
-              onSendMessage(
-                value,
-              )
-            }}
-          />
+      <div className="fixed bottom-6 end-6 z-50 flex flex-col items-end gap-3">
+        <div
+          className="w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col animate-chat-enter"
+          style={{ height: 'min(600px, calc(100vh - 120px))' }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="محادثة استثماركوم"
+        >
+          <ChatHeader mode={mode} humanConnected={humanConnected} onMinimize={onMinimize} onClose={onClose} />
 
-          {isCollectingContact &&
-            missingContactField && (
-              <ContactEnrichment
-                field={
-                  missingContactField
-                }
-                onSubmit={
-                  onSubmitContactField
-                }
-                onBack={() => {
-                  setSkipCurrentCategoryReveal(
-                    true,
-                  )
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
+            <div className="flex flex-col">
+              <ConversationTimeline messages={messages} onSelectSuggestion={(value) => onSendMessage(value)} />
 
-                  onCancelContactEnrichment()
-                }}
-              />
-            )}
-
-          {!isCollectingContact &&
-            isHandoffPending && (
-              <HandoffSystemCard
-                variant="waiting"
-              />
-            )}
-
-          {!isCollectingContact &&
-            isHumanMode &&
-            !humanConnected &&
-            preferredContactTime && (
-              <PreferredTimeSaved
-                preferredTime={
-                  preferredContactTime
-                }
-              />
-            )}
-
-          {!isCollectingContact &&
-            isHumanMode &&
-            !humanConnected &&
-            !preferredContactTime &&
-            !humanTimedOut && (
-              <>
-                <HandoffSystemCard
-                  variant="handoff-complete"
+              {isCollectingContact && missingContactField && (
+                <ContactEnrichment
+                  field={missingContactField}
+                  onSubmit={onSubmitContactField}
+                  onBack={() => { setSkipCurrentCategoryReveal(true); onCancelContactEnrichment() }}
                 />
+              )}
 
-                <HandoffLiveStatus />
-              </>
-            )}
+              {!isCollectingContact && isHandoffPending && (
+                <HandoffSystemCard variant="waiting" />
+              )}
 
-          {!isCollectingContact &&
-            isHumanMode &&
-            !humanConnected &&
-            !preferredContactTime &&
-            humanTimedOut && (
-              <PreferredContactTime
-                onSubmit={
-                  onSubmitPreferredContactTime
-                }
-              />
-            )}
+              {!isCollectingContact && isHumanMode && !humanConnected && preferredContactTime && (
+                <PreferredTimeSaved preferredTime={preferredContactTime} />
+              )}
 
-          {!isCollectingContact &&
-            isHumanMode &&
-            humanConnected && (
-              <div className="human-connected-card">
-                <strong>
-                  مختص متصل بالمحادثة
-                </strong>
+              {!isCollectingContact && isHumanMode && !humanConnected && !preferredContactTime && !humanTimedOut && (
+                <>
+                  <HandoffSystemCard variant="handoff-complete" />
+                  <HandoffLiveStatus />
+                </>
+              )}
 
-                <p>
-                  يمكنك متابعة المحادثة مع الفريق هنا مباشرة.
-                </p>
-              </div>
-            )}
+              {!isCollectingContact && isHumanMode && !humanConnected && !preferredContactTime && humanTimedOut && (
+                <PreferredContactTime onSubmit={onSubmitPreferredContactTime} />
+              )}
 
-          {!isCollectingContact &&
-            !isHandoffPending &&
-            !isHumanMode &&
-            showWelcome &&
-            messages.length === 0 &&
-            !initialGreetingReady && (
-              <TypingIndicator
-                actor="assistant"
-              />
-            )}
+              {!isCollectingContact && isHumanMode && humanConnected && (
+                <div className="flex items-start mb-3 animate-chat-fade-up">
+                  <div className="w-7 h-7 rounded-full bg-success/10 text-success flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">✓</div>
+                  <div className="mx-2">
+                    <strong className="text-sm font-bold text-gray-800 block mb-1">مختص متصل بالمحادثة</strong>
+                    <p className="text-xs text-text-muted">يمكنك متابعة المحادثة مع الفريق هنا مباشرة.</p>
+                  </div>
+                </div>
+              )}
 
-          {!isCollectingContact &&
-            !isHandoffPending &&
-            !isHumanMode &&
-            showWelcome &&
-            messages.length === 0 &&
-            initialGreetingReady && (
-              <>
-                <WelcomeCard />
+              {!isCollectingContact && !isHandoffPending && !isHumanMode && showWelcome && messages.length === 0 && !initialGreetingReady && (
+                <TypingIndicator actor="assistant" />
+              )}
 
-                {initialOptionsTyping && (
-                  <TypingIndicator
-                    actor="assistant"
-                  />
-                )}
-
-                {initialOptionsReady && (
-                  <MainCategoryList
-                    onSelectCategory={(
-                      categoryId,
-                    ) => {
-                      const alreadyVisited =
-                        visitedCategoryIds.has(
-                          categoryId,
-                        )
-
-                      setSkipCurrentCategoryReveal(
-                        alreadyVisited,
-                      )
-
-                      setVisitedCategoryIds(
-                        (current) => {
-                          if (
-                            current.has(
-                              categoryId,
-                            )
-                          ) {
-                            return current
-                          }
-
-                          const next =
-                            new Set(
-                              current,
-                            )
-
-                          next.add(
-                            categoryId,
-                          )
-
+              {!isCollectingContact && !isHandoffPending && !isHumanMode && showWelcome && messages.length === 0 && initialGreetingReady && (
+                <>
+                  <WelcomeCard />
+                  {initialOptionsTyping && <TypingIndicator actor="assistant" />}
+                  {initialOptionsReady && (
+                    <MainCategoryList
+                      onSelectCategory={(categoryId) => {
+                        const alreadyVisited = visitedCategoryIds.has(categoryId)
+                        setSkipCurrentCategoryReveal(alreadyVisited)
+                        setVisitedCategoryIds((current) => {
+                          if (current.has(categoryId)) return current
+                          const next = new Set(current)
+                          next.add(categoryId)
                           return next
-                        },
-                      )
+                        })
+                        dispatchNavigation({ type: 'SELECT_CATEGORY', categoryId })
+                      }}
+                    />
+                  )}
+                </>
+              )}
 
-                      dispatchNavigation({
-                        type:
-                          'SELECT_CATEGORY',
+              {!isCollectingContact && !isHandoffPending && !isHumanMode && showCategoryGroups && navigation.categoryId && (
+                <PlatformScreen
+                  categoryId={navigation.categoryId}
+                  skipConversationalReveal={skipCurrentCategoryReveal}
+                  onBackHome={() => dispatchNavigation({ type: 'RESET' })}
+                  onSelectPlatform={async (platformId) => {
+                    const categoryId = navigation.categoryId
+                    if (!categoryId) return
+                    const category = getCategoryById(categoryId)
+                    const group = getGroupById(platformId)
+                    if (!category || !group) return
+                    await onSelectService({ categoryId: category.id, categoryName: category.title, platformId: group.id, platformName: group.title })
+                    await onRequestSpecialist()
+                  }}
+                />
+              )}
 
-                        categoryId,
-                      })
-                    }}
-                  />
-                )}
-              </>
-            )}
+              {!isCollectingContact && !isHandoffPending && !isHumanMode && showServices && navigation.categoryId && navigation.platformId && (
+                <ServiceListScreen
+                  categoryId={navigation.categoryId}
+                  groupId={navigation.platformId}
+                  onHome={() => dispatchNavigation({ type: 'RESET' })}
+                  onBackToPlatforms={() => dispatchNavigation({ type: 'BACK' })}
+                  onSelectService={handleSelectService}
+                />
+              )}
 
-          {!isCollectingContact &&
-            !isHandoffPending &&
-            !isHumanMode &&
-            showCategoryGroups &&
-            navigation.categoryId && (
-              <PlatformScreen
-                categoryId={
-                  navigation.categoryId
-                }
-                skipConversationalReveal={
-                  skipCurrentCategoryReveal
-                }
-                onBackHome={() => {
-                  dispatchNavigation({
-                    type:
-                      'RESET',
-                  })
-                }}
-                onSelectPlatform={async (
-                  platformId,
-                ) => {
-                  const categoryId =
-                    navigation.categoryId
+              {!isCollectingContact && !isHandoffPending && !isHumanMode && showServiceDetail && selectedCategory && selectedGroup && selectedService && (
+                <ServiceConfirmationScreen
+                  serviceName={selectedService.title}
+                  groupName={selectedGroup.title}
+                  onHome={() => dispatchNavigation({ type: 'RESET' })}
+                  onBackToServices={() => dispatchNavigation({ type: 'BACK' })}
+                  onRequestSpecialist={onRequestSpecialist}
+                />
+              )}
+            </div>
+          </div>
 
-                  if (!categoryId) {
-                    return
-                  }
-
-                  const category =
-                    getCategoryById(
-                      categoryId,
-                    )
-
-                  const group =
-                    getGroupById(
-                      platformId,
-                    )
-
-                  if (
-                    !category ||
-                    !group
-                  ) {
-                    return
-                  }
-
-                  await onSelectService({
-                    categoryId:
-                      category.id,
-
-                    categoryName:
-                      category.title,
-
-                    platformId:
-                      group.id,
-
-                    platformName:
-                      group.title,
-                  })
-
-                  await onRequestSpecialist()
-                }}
-              />
-            )}
-
-          {!isCollectingContact &&
-            !isHandoffPending &&
-            !isHumanMode &&
-            showServices &&
-            navigation.categoryId &&
-            navigation.platformId && (
-              <ServiceListScreen
-                categoryId={
-                  navigation.categoryId
-                }
-                groupId={
-                  navigation.platformId
-                }
-                onHome={() => {
-                  dispatchNavigation({
-                    type:
-                      'RESET',
-                  })
-                }}
-                onBackToPlatforms={() => {
-                  dispatchNavigation({
-                    type:
-                      'BACK',
-                  })
-                }}
-                onSelectService={
-                  handleSelectService
-                }
-              />
-            )}
-
-          {!isCollectingContact &&
-            !isHandoffPending &&
-            !isHumanMode &&
-            showServiceDetail &&
-            selectedCategory &&
-            selectedGroup &&
-            selectedService && (
-              <ServiceConfirmationScreen
-                serviceName={
-                  selectedService.title
-                }
-                groupName={
-                  selectedGroup.title
-                }
-                onHome={() => {
-                  dispatchNavigation({
-                    type:
-                      'RESET',
-                  })
-                }}
-                onBackToServices={() => {
-                  dispatchNavigation({
-                    type:
-                      'BACK',
-                  })
-                }}
-                onRequestSpecialist={
-                  onRequestSpecialist
-                }
-              />
-            )}
+          {!isCollectingContact && !isHandoffPending && !isHumanMode && !showServiceDetail && !(showWelcome && messages.length === 0) && !showCategoryGroups && !showServices && (
+            <SpecialistButton onClick={onRequestSpecialist} />
+          )}
+          <ChatComposer onSend={onSendMessage} />
         </div>
       </div>
-
-      <div className="chat-widget__footer">
-        {!isCollectingContact &&
-          !isHandoffPending &&
-          !isHumanMode &&
-          !showServiceDetail &&
-          !(
-            showWelcome &&
-            messages.length === 0
-          ) &&
-          !showCategoryGroups &&
-          !showServices && (
-            <SpecialistButton
-              onClick={
-                onRequestSpecialist
-              }
-            />
-          )}
-
-        <ChatComposer
-          onSend={
-            onSendMessage
-          }
-        />
-      </div>
-    </section>
+    </>
   )
 }

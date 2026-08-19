@@ -1,97 +1,28 @@
-import {
-  type CSSProperties,
-  useEffect,
-  useState,
-} from 'react'
+import { useEffect, useState } from 'react'
+import { Check, ChevronLeft } from 'lucide-react'
 
-import {
-  getCategoryById,
-  getGroupsByCategory,
-} from '../catalog/catalog-selectors'
-
-import {
-  Breadcrumb,
-  PlatformCard,
-  TypingIndicator,
-} from './index'
+import type { CSSProperties } from 'react'
+import { getCategoryById, getGroupsByCategory } from '../catalog/catalog-selectors'
+import { Breadcrumb, PlatformCard, TypingIndicator } from './index'
 
 interface PlatformScreenProps {
   categoryId: string
   skipConversationalReveal?: boolean
   onBackHome?: () => void
-  onSelectPlatform?: (
-    platformId: string,
-  ) => void
+  onSelectPlatform?: (platformId: string) => void
 }
 
-interface ConversationPrompt {
-  eyebrow: string
-  title: string
-  message: string
-}
-
-function getConversationPrompt(
-  categoryId: string,
-  categoryTitle: string,
-): ConversationPrompt {
-  if (
-    categoryId ===
-    'company-formation'
-  ) {
-    return {
-      eyebrow:
-        'خلّيني أساعدك في التأسيس',
-
-      title:
-        'ما نوع النشاط أو الشركة التي ترغب في تأسيسها؟',
-
-      message:
-        'اختر النوع الأقرب لطلبك، وإذا لم تكن متأكدًا يمكنك كتابة ما تحتاجه في المحادثة وسأساعدك في الوصول للمسار المناسب.',
-    }
+function getConversationPrompt(categoryId: string, categoryTitle: string) {
+  if (categoryId === 'company-formation') {
+    return { eyebrow: 'خلّيني أساعدك في التأسيس', title: 'ما نوع النشاط أو الشركة التي ترغب في تأسيسها؟', message: 'اختر النوع الأقرب لطلبك، وإذا لم تكن متأكدًا يمكنك كتابة ما تحتاجه في المحادثة وسأساعدك في الوصول للمسار المناسب.' }
   }
-
-  if (
-    categoryId ===
-    'government-services'
-  ) {
-    return {
-      eyebrow:
-        'أكيد، أقدر أساعدك',
-
-      title:
-        'أي منصة أو مجال حكومي تحتاج الخدمة من خلاله؟',
-
-      message:
-        'اختر المنصة الأقرب لطلبك، ويمكنك أيضًا وصف احتياجك بطريقتك في المحادثة.',
-    }
+  if (categoryId === 'government-services') {
+    return { eyebrow: 'أكيد، أقدر أساعدك', title: 'أي منصة أو مجال حكومي تحتاج الخدمة من خلاله؟', message: 'اختر المنصة الأقرب لطلبك، ويمكنك أيضًا وصف احتياجك بطريقتك في المحادثة.' }
   }
-
-  if (
-    categoryId ===
-    'premium-residency'
-  ) {
-    return {
-      eyebrow:
-        'ممتاز، نكمل معًا',
-
-      title:
-        'أي مسار من الإقامة المميزة أقرب لطلبك؟',
-
-      message:
-        'اختر الخيار المناسب، وإذا لم تكن تعرف أيها الأنسب اكتب لي ما تبحث عنه وسأساعدك.',
-    }
+  if (categoryId === 'premium-residency') {
+    return { eyebrow: 'ممتاز، نكمل معًا', title: 'أي مسار من الإقامة المميزة أقرب لطلبك؟', message: 'اختر الخيار المناسب، وإذا لم تكن تعرف أيها الأنسب اكتب لي ما تبحث عنه وسأساعدك.' }
   }
-
-  return {
-    eyebrow:
-      `نكمل في ${categoryTitle}`,
-
-    title:
-      'أي خيار أقرب لما تحتاجه؟',
-
-    message:
-      'اختر أحد الخيارات المتاحة أو اكتب طلبك بطريقتك في المحادثة.',
-  }
+  return { eyebrow: `نكمل في ${categoryTitle}`, title: 'أي خيار أقرب لما تحتاجه؟', message: 'اختر أحد الخيارات المتاحة أو اكتب طلبك بطريقتك في المحادثة.' }
 }
 
 export function PlatformScreen({
@@ -100,227 +31,72 @@ export function PlatformScreen({
   onBackHome,
   onSelectPlatform,
 }: PlatformScreenProps) {
-  const isCompanyFormation =
-    categoryId ===
-    'company-formation'
-
-  const [
-    companyPromptReady,
-    setCompanyPromptReady,
-  ] = useState(
-    skipConversationalReveal,
-  )
-
-  const [
-    companyOptionsTyping,
-    setCompanyOptionsTyping,
-  ] = useState(false)
-
-  const [
-    companyOptionsReady,
-    setCompanyOptionsReady,
-  ] = useState(
-    skipConversationalReveal,
-  )
+  const [promptReady, setPromptReady] = useState(skipConversationalReveal)
+  const [optionsTyping, setOptionsTyping] = useState(false)
+  const [optionsReady, setOptionsReady] = useState(skipConversationalReveal)
 
   useEffect(() => {
     if (skipConversationalReveal) {
-      setCompanyPromptReady(true)
-      setCompanyOptionsTyping(false)
-      setCompanyOptionsReady(true)
-
+      setPromptReady(true)
+      setOptionsTyping(false)
+      setOptionsReady(true)
       return
     }
+    setPromptReady(false)
+    setOptionsTyping(false)
+    setOptionsReady(false)
+    const t1 = window.setTimeout(() => setPromptReady(true), 1800)
+    const t2 = window.setTimeout(() => setOptionsTyping(true), 3200)
+    const t3 = window.setTimeout(() => { setOptionsTyping(false); setOptionsReady(true) }, 5000)
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
+  }, [categoryId, skipConversationalReveal])
 
-    setCompanyPromptReady(false)
-    setCompanyOptionsTyping(false)
-    setCompanyOptionsReady(false)
+  const category = getCategoryById(categoryId)
+  const groups = getGroupsByCategory(categoryId)
+  if (!category) return null
 
-    /*
-     * Same deliberate conversational rhythm
-     * approved for the welcome sequence.
-     *
-     * 0–1800ms:
-     * assistant is preparing the question
-     *
-     * 1800ms:
-     * question appears
-     *
-     * 3200ms:
-     * assistant starts preparing suggestions
-     *
-     * 5000ms:
-     * existing catalog choices appear
-     */
-    const promptTimer =
-      window.setTimeout(
-        () => {
-          setCompanyPromptReady(true)
-        },
-        1800,
-      )
-
-    const optionsTypingTimer =
-      window.setTimeout(
-        () => {
-          setCompanyOptionsTyping(true)
-        },
-        3200,
-      )
-
-    const optionsReadyTimer =
-      window.setTimeout(
-        () => {
-          setCompanyOptionsTyping(false)
-          setCompanyOptionsReady(true)
-        },
-        5000,
-      )
-
-    return () => {
-      window.clearTimeout(
-        promptTimer,
-      )
-
-      window.clearTimeout(
-        optionsTypingTimer,
-      )
-
-      window.clearTimeout(
-        optionsReadyTimer,
-      )
-    }
-  }, [
-    categoryId,
-    isCompanyFormation,
-    skipConversationalReveal,
-  ])
-
-  const category =
-    getCategoryById(
-      categoryId,
-    )
-
-  const groups =
-    getGroupsByCategory(
-      categoryId,
-    )
-
-  if (!category) {
-    return null
-  }
-
-  const prompt =
-    getConversationPrompt(
-      category.id,
-      category.title,
-    )
+  const prompt = getConversationPrompt(category.id, category.title)
 
   return (
-    <section className="platform-screen premium-platform-screen">
+    <section className="animate-chat-fade-in">
       <Breadcrumb
-        items={[
-          {
-            id: 'home',
-            label: 'الرئيسية',
-          },
-          {
-            id: category.id,
-            label: category.title,
-            current: true,
-          },
-        ]}
-        onNavigate={(id) => {
-          if (id === 'home') {
-            onBackHome?.()
-          }
-        }}
+        items={[{ id: 'home', label: 'الرئيسية' }, { id: category.id, label: category.title, current: true }]}
+        onNavigate={(id) => { if (id === 'home') onBackHome?.() }}
       />
 
-      {!companyPromptReady && (
-        <TypingIndicator
-          actor="assistant"
-        />
+      {!promptReady && <TypingIndicator actor="assistant" />}
+
+      {promptReady && (
+        <div className="flex items-start gap-2.5 px-4 py-3 mb-2 animate-hero-reveal">
+          <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
+            <span aria-hidden="true">{category.icon}</span>
+          </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-[10px] font-semibold text-secondary">{prompt.eyebrow}</span>
+            <h2 className="text-sm font-bold text-gray-800 leading-snug">{prompt.title}</h2>
+            <p className="text-xs text-text-muted leading-relaxed">{prompt.message}</p>
+          </div>
+        </div>
       )}
 
-      {companyPromptReady && (
-      <header
-        className={
-          skipConversationalReveal
-            ? 'premium-platform-screen__hero platform-return-motion__hero'
-            : 'premium-platform-screen__hero'
-        }
-      >
-        <div className="premium-platform-screen__hero-icon">
-          <span aria-hidden="true">
-            {category.icon}
-          </span>
-        </div>
+      {promptReady && optionsTyping && <TypingIndicator actor="assistant" />}
 
-        <div className="premium-platform-screen__hero-content">
-          <span className="premium-platform-screen__eyebrow">
-            {prompt.eyebrow}
-          </span>
-
-          <h2>
-            {prompt.title}
-          </h2>
-
-          <p>
-            {prompt.message}
-          </p>
-        </div>
-      </header>
-      )}
-
-      {companyPromptReady &&
-        companyOptionsTyping && (
-          <TypingIndicator
-            actor="assistant"
-          />
-        )}
-
-      {companyOptionsReady && (
+      {optionsReady && (
         <>
-      <div
-        className={
-          skipConversationalReveal
-            ? 'premium-platform-screen__section-heading platform-return-motion__heading'
-            : 'premium-platform-screen__section-heading'
-        }
-      >
-        <strong>
-          اختر النوع الأقرب لطلبك
-        </strong>
-      </div>
-
-      <div className="platform-screen__grid premium-platform-grid">
-        {groups.map(
-          (group, index) => (
-            <PlatformCard
-              key={group.id}
-              icon={group.icon}
-              title={group.title}
-              className={
-                skipConversationalReveal
-                  ? 'platform-return-motion__card'
-                  : undefined
-              }
-              style={
-                {
-                  '--platform-return-index':
-                    index,
-                } as CSSProperties
-              }
-              onSelect={() =>
-                onSelectPlatform?.(
-                  group.id,
-                )
-              }
-            />
-          ),
-        )}
-      </div>
+          <div className="px-4 py-1.5">
+            <strong className="text-xs font-bold text-text-muted">اختر النوع الأقرب لطلبك</strong>
+          </div>
+          <div className="flex flex-col gap-1.5 px-4 pb-3">
+            {groups.map((group, index) => (
+              <PlatformCard
+                key={group.id}
+                icon={group.icon}
+                title={group.title}
+                style={{ animationDelay: `${index * 50}ms` } as CSSProperties}
+                onSelect={() => onSelectPlatform?.(group.id)}
+              />
+            ))}
+          </div>
         </>
       )}
     </section>
