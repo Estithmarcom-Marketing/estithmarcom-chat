@@ -12,7 +12,6 @@ interface ChatHeaderProps {
 export function ChatHeader({
   mode,
   humanConnected = false,
-  onMinimize,
   onClose,
 }: ChatHeaderProps) {
   const title =

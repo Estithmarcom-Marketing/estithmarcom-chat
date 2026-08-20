@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { Send, Check } from 'lucide-react'
+import { Send } from 'lucide-react'
 
 interface PreferredContactTimeProps {
   onSubmit?: (preferredTime: string) => void

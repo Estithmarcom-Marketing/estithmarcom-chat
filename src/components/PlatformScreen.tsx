@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronLeft } from 'lucide-react'
 
 import type { CSSProperties } from 'react'
 import { getCategoryById, getGroupsByCategory } from '../catalog/catalog-selectors'
