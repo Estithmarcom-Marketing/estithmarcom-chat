@@ -100,7 +100,7 @@ export function ChatWidget({
     const t2 = window.setTimeout(() => { setInitialOptionsTyping(true); scrollToBottom() }, 3200)
     const t3 = window.setTimeout(() => { setInitialOptionsTyping(false); setInitialOptionsReady(true); scrollToBottom() }, 5000)
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
-  }, [isOpen, isMinimized, messages.length])
+  }, [isOpen, isMinimized, messages.length, scrollToBottom])
 
   if (!isOpen) return <ChatLauncher onOpen={onOpen} />
   if (isMinimized) return <ChatLauncher onOpen={onRestore} />
