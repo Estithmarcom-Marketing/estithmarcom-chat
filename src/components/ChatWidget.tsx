@@ -225,8 +225,20 @@ export function ChatWidget({
                     const category = getCategoryById(categoryId)
                     const group = getGroupById(platformId)
                     if (!category || !group) return
-                    await onSelectService({ categoryId: category.id, categoryName: category.title, platformId: group.id, platformName: group.title })
-                    await onRequestSpecialist()
+                    if (group.directServiceId) {
+                      await onSelectService({
+                        categoryId: category.id,
+                        categoryName: category.title,
+                        platformId: group.id,
+                        platformName: group.title,
+                        serviceId: group.directServiceId,
+                        serviceName: group.title,
+                      })
+                      dispatchNavigation({ type: 'SELECT_PLATFORM', platformId })
+                      dispatchNavigation({ type: 'SELECT_SERVICE', serviceId: group.directServiceId })
+                      return
+                    }
+                    dispatchNavigation({ type: 'SELECT_PLATFORM', platformId })
                   }}
                 />
               )}
@@ -246,7 +258,10 @@ export function ChatWidget({
                   serviceName={selectedService.title}
                   groupName={selectedGroup.title}
                   onHome={() => dispatchNavigation({ type: 'RESET' })}
-                  onBackToServices={() => dispatchNavigation({ type: 'BACK' })}
+                  onBackToServices={() => {
+                    dispatchNavigation({ type: 'BACK' })
+                    if (selectedGroup.directServiceId) dispatchNavigation({ type: 'BACK' })
+                  }}
                   onRequestSpecialist={onRequestSpecialist}
                 />
               )}
