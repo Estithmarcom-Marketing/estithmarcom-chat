@@ -1,9 +1,11 @@
 export const CHAT_ENTRY_OPEN_MESSAGE = 'estithmarcom.chat.open'
 export const CHAT_ENTRY_READY_MESSAGE = 'estithmarcom.chat.ready'
+export const CHAT_ENTRY_STATE_MESSAGE = 'estithmarcom.chat.state'
 export const CHAT_ENTRY_PROTOCOL_VERSION = 1
 
 export type ChatEntryTargetType = 'category' | 'group' | 'service'
 export type ChatEntryLocale = 'ar' | 'en'
+export type ChatEntryViewState = 'closed' | 'open' | 'minimized'
 
 export interface ChatEntryRequest {
   targetType: ChatEntryTargetType
@@ -63,6 +65,14 @@ interface ChatEntryMessageEnvelope {
   type: typeof CHAT_ENTRY_OPEN_MESSAGE
   version: typeof CHAT_ENTRY_PROTOCOL_VERSION
   payload: ChatEntryRequest
+}
+
+export interface ChatEntryStateMessageEnvelope {
+  type: typeof CHAT_ENTRY_STATE_MESSAGE
+  version: typeof CHAT_ENTRY_PROTOCOL_VERSION
+  payload: {
+    state: ChatEntryViewState
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -206,6 +216,24 @@ export function createChatEntryMessage(request: ChatEntryRequest): ChatEntryMess
     type: CHAT_ENTRY_OPEN_MESSAGE,
     version: CHAT_ENTRY_PROTOCOL_VERSION,
     payload: request,
+  }
+}
+
+export function getChatEntryViewState(
+  isOpen: boolean,
+  isMinimized: boolean,
+): ChatEntryViewState {
+  if (!isOpen) return 'closed'
+  return isMinimized ? 'minimized' : 'open'
+}
+
+export function createChatEntryStateMessage(
+  state: ChatEntryViewState,
+): ChatEntryStateMessageEnvelope {
+  return {
+    type: CHAT_ENTRY_STATE_MESSAGE,
+    version: CHAT_ENTRY_PROTOCOL_VERSION,
+    payload: { state },
   }
 }
 

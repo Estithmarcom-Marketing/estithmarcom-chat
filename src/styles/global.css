@@ -193,6 +193,17 @@ body {
 
 #root { min-height: 100vh; }
 
+html[data-chat-embedded='true'],
+html[data-chat-embedded='true'] body {
+  min-width: 0;
+  background: transparent;
+}
+
+html[data-chat-embedded='true'] body,
+html[data-chat-embedded='true'] #root {
+  min-height: 100%;
+}
+
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 button, input, textarea, select { color: inherit; }

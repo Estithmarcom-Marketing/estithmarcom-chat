@@ -12,6 +12,8 @@ import { env } from './config/env'
 import {
   CHAT_ENTRY_PROTOCOL_VERSION,
   CHAT_ENTRY_READY_MESSAGE,
+  createChatEntryStateMessage,
+  getChatEntryViewState,
   isAllowedParentOrigin,
   parseAllowedParentOrigins,
   parseChatEntryMessage,
@@ -60,6 +62,7 @@ function App() {
   const [chatEntryCommand, setChatEntryCommand] = useState<ChatEntryCommand>()
   const nextChatEntryRevision = useRef(0)
   const initialChatEntryQueued = useRef(false)
+  const isEmbedded = window.parent !== window
 
   const queueChatEntry = useCallback((request: ChatEntryRequest) => {
     nextChatEntryRevision.current += 1
@@ -93,7 +96,7 @@ function App() {
 
     window.addEventListener('message', handleParentMessage)
 
-    if (window.parent !== window) {
+    if (isEmbedded) {
       for (const origin of allowedParentOrigins) {
         window.parent.postMessage({
           type: CHAT_ENTRY_READY_MESSAGE,
@@ -103,7 +106,18 @@ function App() {
     }
 
     return () => window.removeEventListener('message', handleParentMessage)
-  }, [queueChatEntry])
+  }, [isEmbedded, queueChatEntry])
+
+  useEffect(() => {
+    if (!isEmbedded) return
+    const allowedParentOrigins = parseAllowedParentOrigins(env.embedAllowedOrigins)
+    const message = createChatEntryStateMessage(
+      getChatEntryViewState(state.isOpen, state.isMinimized),
+    )
+    for (const origin of allowedParentOrigins) {
+      window.parent.postMessage(message, origin)
+    }
+  }, [isEmbedded, state.isMinimized, state.isOpen])
 
   useEffect(() => {
     let cancelled = false
@@ -271,7 +285,7 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-surface">
+    <main className={isEmbedded ? 'min-h-screen bg-transparent' : 'min-h-screen bg-surface'}>
       <ChatWidget
         isOpen={state.isOpen}
         isMinimized={state.isMinimized}

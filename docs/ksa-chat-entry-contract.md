@@ -65,3 +65,23 @@ Supported parameters:
 
 The website integration must use the stable catalog IDs supplied by the chat
 catalog mapping. It must not infer targets from Arabic or English titles.
+
+## Widget view state
+
+When the chat runs inside an iframe, it sends an exact-origin message whenever
+its visible state changes:
+
+```json
+{
+  "type": "estithmarcom.chat.state",
+  "version": 1,
+  "payload": {
+    "state": "open"
+  }
+}
+```
+
+Supported states are `closed`, `open`, and `minimized`. The parent website must
+validate both `event.origin` and `event.source` before resizing the iframe.
+Embedded mode is detected from the browsing context; it removes the standalone
+page background and minimum width without changing the standalone presentation.

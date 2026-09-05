@@ -3,7 +3,10 @@ import test from 'node:test'
 
 import {
   CHAT_ENTRY_OPEN_MESSAGE,
+  CHAT_ENTRY_STATE_MESSAGE,
   createChatEntryMessage,
+  createChatEntryStateMessage,
+  getChatEntryViewState,
   isAllowedParentOrigin,
   parseAllowedParentOrigins,
   parseChatEntryMessage,
@@ -60,6 +63,18 @@ test('parses a versioned open command', () => {
 
   assert.equal(message.type, CHAT_ENTRY_OPEN_MESSAGE)
   assert.deepEqual(parseChatEntryMessage(message), message.payload)
+})
+
+test('creates versioned view-state messages for iframe resizing', () => {
+  assert.equal(getChatEntryViewState(false, false), 'closed')
+  assert.equal(getChatEntryViewState(true, false), 'open')
+  assert.equal(getChatEntryViewState(true, true), 'minimized')
+
+  assert.deepEqual(createChatEntryStateMessage('open'), {
+    type: CHAT_ENTRY_STATE_MESSAGE,
+    version: 1,
+    payload: { state: 'open' },
+  })
 })
 
 test('rejects unknown versions and malformed identifiers', () => {
