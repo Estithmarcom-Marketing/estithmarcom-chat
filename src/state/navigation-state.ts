@@ -17,6 +17,12 @@ export const initialNavigationState: NavigationState = {
 
 export type NavigationAction =
   | {
+      type: 'OPEN_TARGET'
+      categoryId: string
+      platformId?: string
+      serviceId?: string
+    }
+  | {
       type: 'SELECT_CATEGORY'
       categoryId: string
     }
@@ -40,6 +46,18 @@ export function navigationReducer(
   action: NavigationAction,
 ): NavigationState {
   switch (action.type) {
+    case 'OPEN_TARGET':
+      return {
+        screen: action.serviceId
+          ? 'service-detail'
+          : action.platformId
+            ? 'services'
+            : 'platforms',
+        categoryId: action.categoryId,
+        platformId: action.platformId,
+        serviceId: action.serviceId,
+      }
+
     case 'SELECT_CATEGORY':
       return {
         screen: 'platforms',

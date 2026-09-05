@@ -1,9 +1,11 @@
 ﻿import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 import type { ChatMessage, ChatMode, SelectedServiceContext } from '../types'
+import type { ChatEntryCommand } from '../embed'
 import type { ContactField } from './ContactEnrichment'
 
 import { getCategoryById, getGroupById, getServiceById } from '../catalog/catalog-selectors'
+import { resolveChatEntry } from '../embed'
 import { initialNavigationState, navigationReducer } from '../state'
 
 import { HandoffLiveStatus } from './HandoffLiveStatus'
@@ -35,6 +37,8 @@ interface ChatWidgetProps {
   preferredContactTime?: string
   missingContactField?: ContactField
   messages: ChatMessage[]
+  entryCommand?: ChatEntryCommand
+  entryReady: boolean
   onOpen: () => void
   onClose: () => void
   onMinimize: () => void
@@ -56,6 +60,8 @@ export function ChatWidget({
   preferredContactTime,
   missingContactField,
   messages,
+  entryCommand,
+  entryReady,
   onOpen,
   onClose,
   onMinimize,
@@ -75,6 +81,7 @@ export function ChatWidget({
   const [skipCurrentCategoryReveal, setSkipCurrentCategoryReveal] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const processedEntryRevision = useRef(0)
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -85,6 +92,37 @@ export function ChatWidget({
   useEffect(() => {
     scrollToBottom()
   }, [messages.length, scrollToBottom])
+
+  useEffect(() => {
+    if (!entryCommand || !entryReady) return
+    if (entryCommand.revision <= processedEntryRevision.current) return
+
+    processedEntryRevision.current = entryCommand.revision
+    const resolved = resolveChatEntry(entryCommand.request, {
+      getCategoryById,
+      getGroupById,
+      getServiceById,
+    })
+    if (!resolved) return
+
+    setSkipCurrentCategoryReveal(true)
+    setVisitedCategoryIds((current) => {
+      if (current.has(resolved.categoryId)) return current
+      const next = new Set(current)
+      next.add(resolved.categoryId)
+      return next
+    })
+    dispatchNavigation({
+      type: 'OPEN_TARGET',
+      categoryId: resolved.categoryId,
+      platformId: resolved.groupId,
+      serviceId: resolved.serviceId,
+    })
+    if (resolved.selectedService) {
+      void onSelectService(resolved.selectedService)
+    }
+    scrollToBottom()
+  }, [entryCommand, entryReady, onSelectService, scrollToBottom])
 
   useEffect(() => {
     if (!isOpen || isMinimized || messages.length > 0) {
@@ -247,6 +285,7 @@ export function ChatWidget({
                 <ServiceListScreen
                   categoryId={navigation.categoryId}
                   groupId={navigation.platformId}
+                  skipConversationalReveal={skipCurrentCategoryReveal}
                   onHome={() => dispatchNavigation({ type: 'RESET' })}
                   onBackToPlatforms={() => dispatchNavigation({ type: 'BACK' })}
                   onSelectService={handleSelectService}

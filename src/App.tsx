@@ -1,4 +1,4 @@
-﻿import { useEffect, useReducer, useState } from 'react'
+﻿import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 import type { CustomerContact, SelectedServiceContext } from './types'
 import type { ContactField } from './components'
@@ -8,6 +8,16 @@ import { ChatWidget, SystemStatesQA } from './components'
 import { chatReducer, initialChatState } from './state'
 import { clearConversationId, loadConversationId, saveConversationId } from './services'
 import { apiChatService, isConversationNotFoundError } from './integrations'
+import { env } from './config/env'
+import {
+  CHAT_ENTRY_PROTOCOL_VERSION,
+  CHAT_ENTRY_READY_MESSAGE,
+  isAllowedParentOrigin,
+  parseAllowedParentOrigins,
+  parseChatEntryMessage,
+  parseChatEntrySearch,
+} from './embed'
+import type { ChatEntryCommand, ChatEntryRequest } from './embed'
 
 const HUMAN_RESPONSE_TIMEOUT_MS = 60 * 1000
 
@@ -47,12 +57,53 @@ function App() {
   const [humanTimedOut, setHumanTimedOut] = useState(false)
   const [humanWaitStartedAt, setHumanWaitStartedAt] = useState<number | null>(null)
   const [showSystemStatesQA, setShowSystemStatesQA] = useState(false)
+  const [chatEntryCommand, setChatEntryCommand] = useState<ChatEntryCommand>()
+  const nextChatEntryRevision = useRef(0)
+  const initialChatEntryQueued = useRef(false)
+
+  const queueChatEntry = useCallback((request: ChatEntryRequest) => {
+    nextChatEntryRevision.current += 1
+    setChatEntryCommand({
+      revision: nextChatEntryRevision.current,
+      request,
+    })
+    dispatch({ type: 'OPEN_CHAT' })
+  }, [])
 
   const missingContactField = specialistRequested
     ? (handoffContactField ?? getMissingContactField(state.context?.contact ?? {}))
     : undefined
 
   const humanConnected = state.messages.some((message) => message.author === 'human')
+
+  useEffect(() => {
+    const allowedParentOrigins = parseAllowedParentOrigins(env.embedAllowedOrigins)
+    const initialRequest = parseChatEntrySearch(window.location.search)
+    if (initialRequest && !initialChatEntryQueued.current) {
+      initialChatEntryQueued.current = true
+      queueChatEntry(initialRequest)
+    }
+
+    function handleParentMessage(event: MessageEvent<unknown>) {
+      if (event.source !== window.parent) return
+      if (!isAllowedParentOrigin(event.origin, allowedParentOrigins)) return
+      const request = parseChatEntryMessage(event.data)
+      if (request) queueChatEntry(request)
+    }
+
+    window.addEventListener('message', handleParentMessage)
+
+    if (window.parent !== window) {
+      for (const origin of allowedParentOrigins) {
+        window.parent.postMessage({
+          type: CHAT_ENTRY_READY_MESSAGE,
+          version: CHAT_ENTRY_PROTOCOL_VERSION,
+        }, origin)
+      }
+    }
+
+    return () => window.removeEventListener('message', handleParentMessage)
+  }, [queueChatEntry])
 
   useEffect(() => {
     let cancelled = false
@@ -230,6 +281,12 @@ function App() {
         preferredContactTime={state.context?.preferredContactTime}
         missingContactField={missingContactField}
         messages={state.messages}
+        entryCommand={chatEntryCommand}
+        entryReady={
+          Boolean(state.context?.conversationId) &&
+          state.context?.mode === 'assistant' &&
+          !state.context.service.serviceId
+        }
         onOpen={() => dispatch({ type: 'OPEN_CHAT' })}
         onClose={() => dispatch({ type: 'CLOSE_CHAT' })}
         onMinimize={() => dispatch({ type: 'MINIMIZE_CHAT' })}
