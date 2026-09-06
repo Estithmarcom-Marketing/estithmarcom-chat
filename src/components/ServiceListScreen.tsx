@@ -8,6 +8,7 @@ import { ChevronLeft } from 'lucide-react'
 interface ServiceListScreenProps {
   categoryId: string
   groupId: string
+  skipConversationalReveal?: boolean
   onHome?: () => void
   onBackToPlatforms?: () => void
   onSelectService?: (serviceId: string) => void
@@ -16,6 +17,7 @@ interface ServiceListScreenProps {
 export function ServiceListScreen({
   categoryId,
   groupId,
+  skipConversationalReveal = false,
   onHome,
   onBackToPlatforms,
   onSelectService,
@@ -25,12 +27,13 @@ export function ServiceListScreen({
   const services = getServicesByGroup(groupId)
   const isCompanyFormation = categoryId === 'company-formation'
 
-  const [questionReady, setQuestionReady] = useState(!isCompanyFormation)
+  const shouldRevealImmediately = !isCompanyFormation || skipConversationalReveal
+  const [questionReady, setQuestionReady] = useState(shouldRevealImmediately)
   const [servicesTyping, setServicesTyping] = useState(false)
-  const [servicesReady, setServicesReady] = useState(!isCompanyFormation)
+  const [servicesReady, setServicesReady] = useState(shouldRevealImmediately)
 
   useEffect(() => {
-    if (!isCompanyFormation) {
+    if (!isCompanyFormation || skipConversationalReveal) {
       setQuestionReady(true)
       setServicesTyping(false)
       setServicesReady(true)
@@ -43,7 +46,7 @@ export function ServiceListScreen({
     const t2 = window.setTimeout(() => setServicesTyping(true), 3200)
     const t3 = window.setTimeout(() => { setServicesTyping(false); setServicesReady(true) }, 5000)
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
-  }, [categoryId, groupId, isCompanyFormation])
+  }, [categoryId, groupId, isCompanyFormation, skipConversationalReveal])
 
   if (!category || !group) return null
 

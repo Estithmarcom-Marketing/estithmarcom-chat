@@ -15,9 +15,6 @@ function getConversationPrompt(categoryId: string, categoryTitle: string) {
   if (categoryId === 'company-formation') {
     return { eyebrow: 'خلّيني أساعدك في التأسيس', title: 'ما نوع النشاط أو الشركة التي ترغب في تأسيسها؟', message: 'اختر النوع الأقرب لطلبك، وإذا لم تكن متأكدًا يمكنك كتابة ما تحتاجه في المحادثة وسأساعدك في الوصول للمسار المناسب.' }
   }
-  if (categoryId === 'government-services') {
-    return { eyebrow: 'أكيد، أقدر أساعدك', title: 'أي منصة أو مجال حكومي تحتاج الخدمة من خلاله؟', message: 'اختر المنصة الأقرب لطلبك، ويمكنك أيضًا وصف احتياجك بطريقتك في المحادثة.' }
-  }
   if (categoryId === 'premium-residency') {
     return { eyebrow: 'ممتاز، نكمل معًا', title: 'أي مسار من الإقامة المميزة أقرب لطلبك؟', message: 'اختر الخيار المناسب، وإذا لم تكن تعرف أيها الأنسب اكتب لي ما تبحث عنه وسأساعدك.' }
   }
