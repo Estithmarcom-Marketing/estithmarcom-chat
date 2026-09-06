@@ -194,3 +194,35 @@ test('resolves every approved catalog target with consistent relationships', () 
     assert.equal(resolved.serviceId, service.id)
   }
 })
+
+test('excludes the retired government services branch and fails closed', () => {
+  const approvedCatalog = {
+    getCategoryById: (id: string) => catalogCategories.find((item) => item.id === id),
+    getGroupById: (id: string) => catalogGroups.find((item) => item.id === id),
+    getServiceById: (id: string) => catalogServices.find((item) => item.id === id),
+  }
+
+  assert.equal(
+    catalogCategories.some((category) => category.id === 'government-services'),
+    false,
+  )
+  assert.equal(
+    catalogGroups.some((group) => group.categoryId === 'government-services'),
+    false,
+  )
+  assert.equal(
+    catalogServices.some((service) => service.categoryId === 'government-services'),
+    false,
+  )
+  assert.equal(
+    resolveChatEntry(
+      { targetType: 'category', targetId: 'government-services' },
+      approvedCatalog,
+    ),
+    null,
+  )
+  assert.equal(
+    catalogCategories.some((category) => category.id === 'government-procedures'),
+    true,
+  )
+})
