@@ -58,6 +58,8 @@ test('parses a versioned open command', () => {
     targetId: 'financial-services',
     source: 'service_card',
     websiteServiceId: '15',
+    serviceCountryId: '1',
+    serviceCountryName: 'السعودية',
     locale: 'ar',
   })
 
@@ -93,12 +95,14 @@ test('rejects unknown versions and malformed identifiers', () => {
 
 test('parses a validated initial URL request', () => {
   assert.deepEqual(
-    parseChatEntrySearch('?chat_target_type=group&chat_target_id=accounting&chat_source=service_details&website_service_id=20&locale=ar'),
+    parseChatEntrySearch('?chat_target_type=group&chat_target_id=accounting&chat_source=service_details&website_service_id=20&service_country_id=4&service_country_name=%D8%B9%D9%85%D8%A7%D9%86&locale=ar'),
     {
       targetType: 'group',
       targetId: 'accounting',
       source: 'service_details',
       websiteServiceId: '20',
+      serviceCountryId: '4',
+      serviceCountryName: 'عمان',
       locale: 'ar',
     },
   )

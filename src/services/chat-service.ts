@@ -30,6 +30,9 @@ export interface SelectServiceInput {
 
   serviceId?: string
   serviceName?: string
+
+  serviceCountryId?: string
+  serviceCountryName?: string
 }
 
 export interface RequestSpecialistInput {

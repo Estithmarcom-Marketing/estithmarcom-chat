@@ -12,6 +12,8 @@ export interface ChatEntryRequest {
   targetId: string
   source?: string
   websiteServiceId?: string
+  serviceCountryId?: string
+  serviceCountryName?: string
   pageUrl?: string
   locale?: ChatEntryLocale
   requestId?: string
@@ -97,6 +99,14 @@ function readWebsiteServiceId(value: unknown): string | undefined {
   return normalized
 }
 
+function readServiceCountryName(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const normalized = value.trim()
+  if (!normalized || normalized.length > 128) return undefined
+  if (!/^[\p{L}\p{M}\p{N}\s&'’().-]+$/u.test(normalized)) return undefined
+  return normalized
+}
+
 function readLocale(value: unknown): ChatEntryLocale | undefined {
   return value === 'ar' || value === 'en' ? value : undefined
 }
@@ -137,6 +147,16 @@ export function parseChatEntryPayload(value: unknown): ChatEntryRequest | null {
     : readWebsiteServiceId(value.websiteServiceId)
   if (value.websiteServiceId !== undefined && !websiteServiceId) return null
 
+  const serviceCountryId = value.serviceCountryId === undefined
+    ? undefined
+    : readWebsiteServiceId(value.serviceCountryId)
+  if (value.serviceCountryId !== undefined && !serviceCountryId) return null
+
+  const serviceCountryName = value.serviceCountryName === undefined
+    ? undefined
+    : readServiceCountryName(value.serviceCountryName)
+  if (value.serviceCountryName !== undefined && !serviceCountryName) return null
+
   const pageUrl = value.pageUrl === undefined
     ? undefined
     : readPageUrl(value.pageUrl)
@@ -157,6 +177,8 @@ export function parseChatEntryPayload(value: unknown): ChatEntryRequest | null {
     targetId,
     ...(source ? { source } : {}),
     ...(websiteServiceId ? { websiteServiceId } : {}),
+    ...(serviceCountryId ? { serviceCountryId } : {}),
+    ...(serviceCountryName ? { serviceCountryName } : {}),
     ...(pageUrl ? { pageUrl } : {}),
     ...(locale ? { locale } : {}),
     ...(requestId ? { requestId } : {}),
@@ -181,6 +203,8 @@ export function parseChatEntrySearch(search: string): ChatEntryRequest | null {
     targetId,
     source: params.get('chat_source') ?? undefined,
     websiteServiceId: params.get('website_service_id') ?? undefined,
+    serviceCountryId: params.get('service_country_id') ?? undefined,
+    serviceCountryName: params.get('service_country_name') ?? undefined,
     pageUrl: params.get('page_url') ?? undefined,
     locale: params.get('locale') ?? undefined,
     requestId: params.get('request_id') ?? undefined,

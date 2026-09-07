@@ -41,6 +41,9 @@ export interface SelectedServiceContext {
 
   serviceId?: string
   serviceName?: string
+
+  serviceCountryId?: string
+  serviceCountryName?: string
 }
 
 export interface ConversationContext {
@@ -79,6 +82,9 @@ export interface UpdateServiceInput {
     platformName: string
     serviceId?: string
     serviceName?: string
+
+    serviceCountryId?: string
+    serviceCountryName?: string
   }
 }
 

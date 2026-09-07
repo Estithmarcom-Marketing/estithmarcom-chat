@@ -26,6 +26,9 @@ interface UpdateServiceBody {
   platformName: string
   serviceId?: string
   serviceName?: string
+
+  serviceCountryId?: string
+  serviceCountryName?: string
 }
 
 interface UpdateContactBody {
@@ -117,6 +120,17 @@ const updateServiceBodySchema = {
       type: 'string',
       minLength: 1,
       maxLength: 256,
+    },
+
+    serviceCountryId: {
+      type: 'string',
+      pattern: '^[0-9]{1,32}$',
+    },
+
+    serviceCountryName: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
     },
   },
 } as const
@@ -311,6 +325,12 @@ export async function conversationRoutes(
 
             serviceName:
               request.body.serviceName,
+
+            serviceCountryId:
+              request.body.serviceCountryId,
+
+            serviceCountryName:
+              request.body.serviceCountryName,
           },
         })
 

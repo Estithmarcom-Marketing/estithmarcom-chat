@@ -245,6 +245,8 @@ function buildHandoffAttributes(
       platformName?: string
       serviceId?: string
       serviceName?: string
+      serviceCountryId?: string
+      serviceCountryName?: string
     }
 
     handoffReason?: string
@@ -298,6 +300,16 @@ function buildHandoffAttributes(
   if (service?.platformName) {
     attributes.platform_name =
       service.platformName
+  }
+
+  if (service?.serviceCountryId) {
+    attributes.service_country_id =
+      service.serviceCountryId
+  }
+
+  if (service?.serviceCountryName) {
+    attributes.service_country_name =
+      service.serviceCountryName
   }
 
   if (input.handoffReason) {

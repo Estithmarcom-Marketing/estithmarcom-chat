@@ -222,6 +222,12 @@ export const apiChatService: ChatService = {
 
             serviceName:
               input.serviceName,
+
+            serviceCountryId:
+              input.serviceCountryId,
+
+            serviceCountryName:
+              input.serviceCountryName,
           }),
       },
     )

@@ -22,6 +22,7 @@ import {
 import type { ChatEntryCommand, ChatEntryRequest } from './embed'
 
 const HUMAN_RESPONSE_TIMEOUT_MS = 60 * 1000
+const DEFAULT_SERVICE_COUNTRY_NAME = 'السعودية'
 
 function getMissingContactField(contact: CustomerContact): ContactField | undefined {
   if (!contact.name?.trim()) return 'name'
@@ -208,12 +209,28 @@ function App() {
 
   async function handleSelectService(service: SelectedServiceContext) {
     if (!service.categoryId || !service.categoryName || !service.platformId || !service.platformName) return
+
+    const serviceCountryId = chatEntryCommand
+      ? chatEntryCommand.request.serviceCountryId
+      : state.context?.service.serviceCountryId
+
+    const serviceCountryName = chatEntryCommand
+      ? (
+          chatEntryCommand.request.serviceCountryName ??
+          DEFAULT_SERVICE_COUNTRY_NAME
+        )
+      : (
+          state.context?.service.serviceCountryName ??
+          DEFAULT_SERVICE_COUNTRY_NAME
+        )
+
     try {
       const updatedContext = await apiChatService.selectService({
         conversationId: state.context?.conversationId,
         categoryId: service.categoryId, categoryName: service.categoryName,
         platformId: service.platformId, platformName: service.platformName,
         serviceId: service.serviceId, serviceName: service.serviceName,
+        serviceCountryId, serviceCountryName,
       })
       dispatch({ type: 'SET_CONTEXT', payload: updatedContext })
     } catch (error) { console.error('Failed to select service', error) }

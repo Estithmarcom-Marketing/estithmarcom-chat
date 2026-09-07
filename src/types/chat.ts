@@ -47,6 +47,9 @@ export interface SelectedServiceContext {
 
   serviceId?: string
   serviceName?: string
+
+  serviceCountryId?: string
+  serviceCountryName?: string
 }
 
 export interface ConversationContext {
