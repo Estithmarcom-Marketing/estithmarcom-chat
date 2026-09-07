@@ -298,8 +298,7 @@ function App() {
         entryCommand={chatEntryCommand}
         entryReady={
           Boolean(state.context?.conversationId) &&
-          state.context?.mode === 'assistant' &&
-          !state.context.service.serviceId
+          state.context?.mode === 'assistant'
         }
         onOpen={() => dispatch({ type: 'OPEN_CHAT' })}
         onClose={() => dispatch({ type: 'CLOSE_CHAT' })}
