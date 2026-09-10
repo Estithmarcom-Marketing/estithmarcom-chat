@@ -525,6 +525,27 @@ export async function updateChatwootConversationAttributes(
   )
 }
 
+export async function resolveChatwootConversation(
+  conversationId: number,
+): Promise<void> {
+  await chatwootRequest<unknown>(
+    `/api/v1/accounts/${chatwootConfig.accountId}/conversations/${conversationId}/toggle_status`,
+    {
+      method: 'POST',
+
+      headers: {
+        api_access_token:
+          chatwootConfig.apiAccessToken,
+      },
+
+      body:
+        JSON.stringify({
+          status: 'resolved',
+        }),
+    },
+  )
+}
+
 export async function loadChatwootWidgetMessages(
   authToken: string,
 ): Promise<ChatwootRestoredMessage[]> {

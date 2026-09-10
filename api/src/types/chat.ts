@@ -56,6 +56,8 @@ export interface ConversationContext {
   intent?: string
   handoffReason?: string
   preferredContactTime?: string
+  callbackSubmittedAt?: string
+  humanModeStartedAt?: string
 }
 
 export interface StartSessionResult {

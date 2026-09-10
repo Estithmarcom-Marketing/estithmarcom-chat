@@ -2,6 +2,7 @@ import {
   createChatwootConversation,
   createChatwootWidgetMessage,
   loadChatwootWidgetMessages,
+  resolveChatwootConversation,
   updateChatwootContact,
   updateChatwootConversationAttributes,
 } from '../clients/chatwoot-client.js'
@@ -54,6 +55,7 @@ function buildConversationContext(
     ? Exclude<T, null>
     : never,
   runtimeMode?: ChatMode,
+  humanModeStartedAt?: string | null,
 ): ConversationContext {
   return {
     conversationId:
@@ -85,6 +87,12 @@ function buildConversationContext(
 
     preferredContactTime:
       session.metadata.preferredContactTime,
+
+    callbackSubmittedAt:
+      session.metadata.callbackSubmittedAt,
+
+    humanModeStartedAt:
+      humanModeStartedAt ?? undefined,
   }
 }
 
@@ -472,6 +480,8 @@ export async function loadConversation(
         humanMode:
           runtimeState.humanMode,
       }),
+
+      runtimeState.humanModeStartedAt,
     )
 
   if (!session.chatwootAuthToken) {
@@ -808,17 +818,21 @@ export async function requestConversationHandoff(
 export async function updateConversationPreferredContactTime(
   input: PreferredContactTimeInput,
 ): Promise<ConversationContext | null> {
-  const updatedSession =
+  const updateResult =
     await updatePublicSessionPreferredContactTime(
       input.publicSessionId,
       input.preferredContactTime,
     )
 
-  if (!updatedSession) {
+  if (!updateResult) {
     return null
   }
 
+  const updatedSession =
+    updateResult.session
+
   if (
+    updateResult.created &&
     updatedSession.conversationId !==
     null
   ) {
@@ -849,9 +863,12 @@ export async function updateConversationPreferredContactTime(
         }),
 
         preferred_contact_time:
+          updatedSession.metadata
+            .preferredContactTime ??
           input.preferredContactTime,
       },
     })
+    await resolveChatwootConversation(updatedSession.conversationId)
   }
 
   return buildConversationContext(

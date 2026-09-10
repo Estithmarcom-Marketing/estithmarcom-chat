@@ -1,12 +1,12 @@
 ﻿import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
-import type { CustomerContact, SelectedServiceContext } from './types'
+import type { ChatMessage, CustomerContact, SelectedServiceContext } from './types'
 import type { ContactField } from './components'
 
 import { ChatWidget, SystemStatesQA } from './components'
 
 import { chatReducer, initialChatState } from './state'
-import { clearConversationId, loadConversationId, saveConversationId } from './services'
+import { clearConversationId, loadArchivedConversationReferences, loadConversationId, saveArchivedConversationReference, saveConversationId } from './services'
 import { apiChatService, isConversationNotFoundError } from './integrations'
 import { env } from './config/env'
 import {
@@ -21,7 +21,8 @@ import {
 } from './embed'
 import type { ChatEntryCommand, ChatEntryRequest } from './embed'
 
-const HUMAN_RESPONSE_TIMEOUT_MS = 60 * 1000
+const HUMAN_RESPONSE_TIMEOUT_MS = 2 * 60 * 1000
+const CALLBACK_HISTORY_RETENTION_MS = 2 * 60 * 60 * 1000
 const DEFAULT_SERVICE_COUNTRY_NAME = 'السعودية'
 
 function getMissingContactField(contact: CustomerContact): ContactField | undefined {
@@ -52,13 +53,32 @@ function isHumanHandoffRequest(content: string): boolean {
   return patterns.some((pattern) => pattern.test(normalized))
 }
 
+
+async function loadArchivedMessagesFromServer(): Promise<ChatMessage[]> {
+  const batches = await Promise.all(
+    loadArchivedConversationReferences().map(async (reference) => {
+      try {
+        const result = await apiChatService.loadConversation(reference.conversationId)
+        const cutoff = Date.parse(reference.callbackSubmittedAt)
+        return result.messages
+          .filter((message) => Date.parse(message.createdAt) <= cutoff)
+          .map((message) => ({ ...message, contentAttributes: undefined }))
+      } catch {
+        return []
+      }
+    }),
+  )
+
+  return batches.flat()
+}
+
 function App() {
   const [state, dispatch] = useReducer(chatReducer, initialChatState)
   const [specialistRequested, setSpecialistRequested] = useState(false)
   const [handoffContactField, setHandoffContactField] = useState<ContactField | undefined>(undefined)
   const [pendingHandoffQuestion, setPendingHandoffQuestion] = useState<string | null>(null)
   const [humanTimedOut, setHumanTimedOut] = useState(false)
-  const [humanWaitStartedAt, setHumanWaitStartedAt] = useState<number | null>(null)
+  const [archivedMessages, setArchivedMessages] = useState<ChatMessage[]>([])
   const [showSystemStatesQA, setShowSystemStatesQA] = useState(false)
   const [chatEntryCommand, setChatEntryCommand] = useState<ChatEntryCommand>()
   const nextChatEntryRevision = useRef(0)
@@ -78,7 +98,33 @@ function App() {
     ? (handoffContactField ?? getMissingContactField(state.context?.contact ?? {}))
     : undefined
 
-  const humanConnected = state.messages.some((message) => message.author === 'human')
+  const callbackSubmittedAt = Date.parse(state.context?.callbackSubmittedAt ?? '')
+  const visibleMessages = Number.isFinite(callbackSubmittedAt) ? state.messages.filter((message) => Date.parse(message.createdAt) <= callbackSubmittedAt) : state.messages
+  const humanConnected = visibleMessages.some((message) => message.author === 'human')
+
+  useEffect(() => {
+    const expirations =
+      loadArchivedConversationReferences()
+        .map((reference) =>
+          Date.parse(reference.expiresAt),
+        )
+
+    if (expirations.length === 0) {
+      return
+    }
+
+    const delay = Math.max(
+      0,
+      Math.min(...expirations) - Date.now(),
+    )
+
+    const timer = window.setTimeout(() => {
+      void loadArchivedMessagesFromServer()
+        .then(setArchivedMessages)
+    }, delay)
+
+    return () => window.clearTimeout(timer)
+  }, [archivedMessages.length])
 
   useEffect(() => {
     const allowedParentOrigins = parseAllowedParentOrigins(env.embedAllowedOrigins)
@@ -126,6 +172,7 @@ function App() {
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connecting' })
       try {
+        const restoredArchivedMessages = await loadArchivedMessagesFromServer()
         const existingConversationId = loadConversationId()
         let result
         if (existingConversationId) {
@@ -140,6 +187,7 @@ function App() {
           result = await apiChatService.startSession()
         }
         if (cancelled) return
+        setArchivedMessages(restoredArchivedMessages)
         if (result.context.conversationId) saveConversationId(result.context.conversationId)
         dispatch({ type: 'SET_CONTEXT', payload: result.context })
         dispatch({ type: 'SET_MESSAGES', payload: result.messages })
@@ -180,15 +228,52 @@ function App() {
   }, [state.context?.conversationId])
 
   useEffect(() => {
-    const isWaitingForHuman = state.context?.mode === 'human' && !humanConnected
-    if (!isWaitingForHuman) { setHumanTimedOut(false); setHumanWaitStartedAt(null); return }
-    const startedAt = humanWaitStartedAt ?? Date.now()
-    if (humanWaitStartedAt === null) setHumanWaitStartedAt(startedAt)
-    const remaining = HUMAN_RESPONSE_TIMEOUT_MS - (Date.now() - startedAt)
-    if (remaining <= 0) { setHumanTimedOut(true); return }
-    const timer = window.setTimeout(() => setHumanTimedOut(true), remaining)
-    return () => { window.clearTimeout(timer) }
-  }, [state.context?.mode, humanConnected, humanWaitStartedAt])
+    const isWaitingForHuman =
+      state.context?.mode === 'human' &&
+      !humanConnected &&
+      !state.context.preferredContactTime
+
+    if (!isWaitingForHuman) {
+      setHumanTimedOut(false)
+      return
+    }
+
+    const startedAt =
+      Date.parse(
+        state.context?.humanModeStartedAt ?? '',
+      )
+
+    if (!Number.isFinite(startedAt)) {
+      setHumanTimedOut(true)
+      return
+    }
+
+    const remaining =
+      HUMAN_RESPONSE_TIMEOUT_MS -
+      (Date.now() - startedAt)
+
+    if (remaining <= 0) {
+      setHumanTimedOut(true)
+      return
+    }
+
+    setHumanTimedOut(false)
+
+    const timer =
+      window.setTimeout(
+        () => setHumanTimedOut(true),
+        remaining,
+      )
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [
+    state.context?.mode,
+    state.context?.preferredContactTime,
+    state.context?.humanModeStartedAt,
+    humanConnected,
+  ])
 
   async function handleSendMessage(content: string) {
     const cleanContent = content.trim()
@@ -275,6 +360,67 @@ function App() {
     } catch (error) { console.error('Failed to update contact', error) }
   }
 
+  async function handleCloseChat() {
+    dispatch({ type: 'CLOSE_CHAT' })
+
+    const conversationId =
+      state.context?.conversationId
+    const submittedAt =
+      state.context?.callbackSubmittedAt
+
+    if (!conversationId || !submittedAt) {
+      return
+    }
+
+    saveArchivedConversationReference({
+      conversationId,
+      callbackSubmittedAt: submittedAt,
+      expiresAt: new Date(
+        Date.now() + CALLBACK_HISTORY_RETENTION_MS,
+      ).toISOString(),
+    })
+
+    clearConversationId()
+    setArchivedMessages((current) => [
+      ...current,
+      ...visibleMessages,
+    ])
+
+    try {
+      const result =
+        await apiChatService.startSession()
+
+      if (result.context.conversationId) {
+        saveConversationId(
+          result.context.conversationId,
+        )
+      }
+
+      dispatch({
+        type: 'SET_CONTEXT',
+        payload: result.context,
+      })
+      dispatch({
+        type: 'SET_MESSAGES',
+        payload: result.messages,
+      })
+      dispatch({
+        type: 'SET_CONNECTION_STATUS',
+        payload: 'connected',
+      })
+
+      setSpecialistRequested(false)
+      setHandoffContactField(undefined)
+      setPendingHandoffQuestion(null)
+      setHumanTimedOut(false)
+    } catch (error) {
+      console.error(
+        'Failed to start a new conversation',
+        error,
+      )
+    }
+  }
+
   async function handlePreferredContactTime(preferredTime: string) {
     try {
       const currentMode = state.context?.mode
@@ -311,14 +457,15 @@ function App() {
         humanTimedOut={humanTimedOut}
         preferredContactTime={state.context?.preferredContactTime}
         missingContactField={missingContactField}
-        messages={state.messages}
+        archivedMessages={archivedMessages}
+        messages={visibleMessages}
         entryCommand={chatEntryCommand}
         entryReady={
           Boolean(state.context?.conversationId) &&
           state.context?.mode === 'assistant'
         }
-        onOpen={() => dispatch({ type: 'OPEN_CHAT' })}
-        onClose={() => dispatch({ type: 'CLOSE_CHAT' })}
+        onOpen={() => { void loadArchivedMessagesFromServer().then(setArchivedMessages); dispatch({ type: 'OPEN_CHAT' }) }}
+        onClose={() => { void handleCloseChat() }}
         onMinimize={() => dispatch({ type: 'MINIMIZE_CHAT' })}
         onRestore={() => dispatch({ type: 'RESTORE_CHAT' })}
         onSendMessage={(message) => { void handleSendMessage(message) }}

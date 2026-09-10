@@ -28,10 +28,16 @@ export interface PublicSessionRecord {
     originalQuestion?: string
     intent?: string
     preferredContactTime?: string
+    callbackSubmittedAt?: string
   }
 
   createdAt: string
   updatedAt: string
+}
+
+export interface PreferredContactTimeUpdateResult {
+  session: PublicSessionRecord
+  created: boolean
 }
 
 export interface ConversationRuntimeState {
@@ -60,6 +66,7 @@ interface PublicSessionRow {
     originalQuestion?: string
     intent?: string
     preferredContactTime?: string
+    callbackSubmittedAt?: string
   }
 
   created_at: Date
@@ -465,39 +472,75 @@ export async function requestPublicSessionHandoff(
 export async function updatePublicSessionPreferredContactTime(
   publicSessionId: string,
   preferredContactTime: string,
-): Promise<PublicSessionRecord | null> {
+): Promise<PreferredContactTimeUpdateResult | null> {
+  const callbackSubmittedAt =
+    new Date().toISOString()
+
   const result =
     await databasePool.query<PublicSessionRow>(
       `
         UPDATE est_chat_public_sessions
         SET
           metadata = jsonb_set(
-            COALESCE(
-              metadata,
-              '{}'::jsonb
+            jsonb_set(
+              COALESCE(
+                metadata,
+                '{}'::jsonb
+              ),
+              '{preferredContactTime}',
+              to_jsonb(
+                $2::text
+              ),
+              true
             ),
-            '{preferredContactTime}',
+            '{callbackSubmittedAt}',
             to_jsonb(
-              $2::text
+              $3::text
             ),
             true
           ),
           updated_at = now()
         WHERE public_session_id = $1
+          AND NOT (
+            COALESCE(
+              metadata,
+              '{}'::jsonb
+            ) ? 'callbackSubmittedAt'
+          )
         RETURNING
           ${publicSessionColumns}
       `,
       [
         publicSessionId,
         preferredContactTime,
+        callbackSubmittedAt,
       ],
     )
 
   const row = result.rows[0]
 
-  if (!row) {
+  if (row) {
+    return {
+      session:
+        mapPublicSessionRow(row),
+      created:
+        true,
+    }
+  }
+
+  const existingSession =
+    await findPublicSessionById(
+      publicSessionId,
+    )
+
+  if (!existingSession) {
     return null
   }
 
-  return mapPublicSessionRow(row)
+  return {
+    session:
+      existingSession,
+    created:
+      false,
+  }
 }

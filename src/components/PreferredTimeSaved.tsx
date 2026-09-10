@@ -13,15 +13,15 @@ export function PreferredTimeSaved({
         <Check className="w-4 h-4" />
       </div>
       <div className="mx-2 flex-1 min-w-0">
-        <span className="text-[10px] font-semibold text-green-600 block">تم تحديث طلبك</span>
+        <span className="text-[10px] font-semibold text-green-600 block">تم إرسال طلب الاتصال</span>
         <div className="px-3.5 py-2.5 rounded-2xl rounded-br-sm bg-primary text-white text-sm leading-relaxed max-w-[80%] mt-1">
-          <h2 className="font-semibold mb-1">تم تسجيل الوقت المفضل</h2>
+          <h2 className="font-semibold mb-1">تم حفظ طلبك بنجاح</h2>
           <div className="flex items-center gap-1.5 text-[11px] text-white/80 bg-white/10 rounded-lg px-2.5 py-1.5 my-2">
             <span className="text-white/60">الوقت المناسب:</span>
             <strong className="text-white">{preferredTime}</strong>
           </div>
-          <p className="mb-1"> أصبح الوقت المفضل محفوظًا لدى فريق استثماركوم.</p>
-          <p className="text-[11px] text-white/70">ويمكنك الاستمرار بالكتابة هنا في أي وقت.</p>
+          <p className="mb-1">تم إرسال طلبك والوقت المناسب إلى فريق استثماركوم.</p>
+          <p className="text-[11px] text-white/70">سيتواصل معك الموظف عبر رقم الهاتف المسجل في الوقت الذي اخترته. يمكنك الآن إغلاق الشات.</p>
         </div>
       </div>
     </div>

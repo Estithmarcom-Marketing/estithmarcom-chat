@@ -13,4 +13,10 @@ export {
   saveConversationId,
   loadConversationId,
   clearConversationId,
+  loadArchivedConversationReferences,
+  saveArchivedConversationReference,
+} from './session-storage'
+
+export type {
+  ArchivedConversationReference,
 } from './session-storage'

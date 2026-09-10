@@ -37,6 +37,7 @@ interface ChatWidgetProps {
   preferredContactTime?: string
   missingContactField?: ContactField
   messages: ChatMessage[]
+  archivedMessages?: ChatMessage[]
   entryCommand?: ChatEntryCommand
   entryReady: boolean
   onOpen: () => void
@@ -60,6 +61,7 @@ export function ChatWidget({
   preferredContactTime,
   missingContactField,
   messages,
+  archivedMessages = [],
   entryCommand,
   entryReady,
   onOpen,
@@ -91,7 +93,7 @@ export function ChatWidget({
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages.length, scrollToBottom])
+  }, [archivedMessages.length, messages.length, scrollToBottom])
 
   useEffect(() => {
     if (!entryCommand || !entryReady) return
@@ -187,6 +189,7 @@ export function ChatWidget({
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
             <div className="flex flex-col">
+              <ConversationTimeline messages={archivedMessages} onSelectSuggestion={() => undefined} />
               <ConversationTimeline messages={messages} onSelectSuggestion={(value) => onSendMessage(value)} />
 
               {isCollectingContact && missingContactField && (
@@ -310,7 +313,7 @@ export function ChatWidget({
           {!isCollectingContact && !isHandoffPending && !isHumanMode && !showServiceDetail && !(showWelcome && messages.length === 0) && !showCategoryGroups && !showServices && (
             <SpecialistButton onClick={onRequestSpecialist} />
           )}
-          <ChatComposer onSend={onSendMessage} />
+          {!preferredContactTime && <ChatComposer onSend={onSendMessage} />}
         </div>
       </div>
     </>
