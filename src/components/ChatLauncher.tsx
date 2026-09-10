@@ -20,8 +20,7 @@ export function ChatLauncher({
 
   return (
     <div
-      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-2"
-      dir="ltr"
+      className="fixed bottom-5 end-5 sm:bottom-6 sm:end-6 z-50 flex flex-col items-end gap-2"
     >
       {shouldShowGreeting && (
         <div className="flex items-center gap-2 animate-chat-fade-up">
