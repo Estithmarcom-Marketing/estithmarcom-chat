@@ -176,11 +176,11 @@ export function ChatWidget({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40" onClick={onClose} />
 
       <div className="fixed bottom-6 end-6 z-50 flex flex-col items-end gap-3">
         <div
-          className="w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col animate-chat-enter"
+          className="w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-[0_0_5px_rgba(33,26,39,0.18)] border border-gray-200 overflow-hidden flex flex-col animate-chat-enter"
           style={{ height: 'min(600px, calc(100vh - 120px))' }}
           onClick={(e) => e.stopPropagation()}
           aria-label="محادثة استثماركوم"
