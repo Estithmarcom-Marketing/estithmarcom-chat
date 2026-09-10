@@ -152,7 +152,7 @@ export function ChatLauncher({
             aria-label={GREETING_TEXT}
             dir="rtl"
           >
-            <span aria-hidden="true">
+            <span className="whitespace-nowrap" aria-hidden="true">
               {displayedGreeting}
 
               <span
@@ -161,7 +161,7 @@ export function ChatLauncher({
                   'transition-opacity',
                   isTyping
                     ? 'opacity-100 animate-pulse'
-                    : 'opacity-0',
+                    : 'hidden',
                 ].join(' ')}
               >
                 |
