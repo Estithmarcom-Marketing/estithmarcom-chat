@@ -26,7 +26,7 @@ export function ChatLauncher({
         <div className="flex items-center gap-2 animate-chat-fade-up">
           <button
             type="button"
-            className="min-h-10 max-w-[calc(100vw-6.5rem)] rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-gray-800 shadow-[0_10px_30px_rgba(15,23,42,0.18)] border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+            className="min-h-10 max-w-[calc(100vw-6.5rem)] rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-gray-800 shadow-[0_10px_30px_rgba(15,23,42,0.18)] border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer animate-greeting-attention"
             onClick={onOpen}
             dir="rtl"
           >

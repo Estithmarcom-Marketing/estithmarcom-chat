@@ -46,6 +46,7 @@
   --animate-chat-enter: chat-enter 360ms var(--ease-emphasized) backwards;
   --animate-chat-fade-up: chat-fade-up 320ms var(--ease-emphasized) backwards;
   --animate-chat-fade-in: chat-fade-in 260ms var(--ease-standard) backwards;
+  --animate-greeting-attention: greeting-attention 3.6s ease-in-out 800ms infinite;
   --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
   --animate-typing-dot: typing-dot 1.15s ease-in-out infinite;
   --animate-spin-slow: spin 1.4s linear infinite;
@@ -89,6 +90,14 @@
 @keyframes chat-fade-in {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes greeting-attention {
+  0%, 68%, 100% { transform: translateY(0) scale(1); }
+  76% { transform: translateY(-3px) scale(1.015); }
+  84% { transform: translateY(0) scale(1); }
+  90% { transform: translateY(-1px) scale(1.005); }
+  96% { transform: translateY(0) scale(1); }
 }
 
 @keyframes pulse-soft {
