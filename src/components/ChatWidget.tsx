@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 import type { ChatMessage, ChatMode, SelectedServiceContext } from '../types'
 import type { ChatEntryCommand } from '../embed'
@@ -142,7 +142,7 @@ export function ChatWidget({
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
   }, [isOpen, isMinimized, messages.length, scrollToBottom])
 
-  if (!isOpen) return <ChatLauncher onOpen={onOpen} />
+  if (!isOpen) return <ChatLauncher onOpen={onOpen} showGreeting />
   if (isMinimized) return <ChatLauncher onOpen={onRestore} />
 
   const showWelcome = navigation.screen === 'welcome'
