@@ -230,3 +230,164 @@ test('excludes the retired government services branch and fails closed', () => {
     true,
   )
 })
+
+test('keeps the approved catalog to two choices before specialist handoff', () => {
+  const expectedCatalog = [
+    {
+      id: 'company-formation',
+      title: 'تأسيس شركات',
+      subtitle: 'تأسيس شركتك في السعودية والدول العربية والأجنبية: ابدأ شركتك بخطوات واضحة ومنظمة',
+      groups: [
+        'شركة تجارية',
+        'شركة خدمية أو عقارية',
+        'شركة صناعية',
+        'شركة مساهمة',
+        'أنواع أخرى',
+      ],
+    },
+    {
+      id: 'entrepreneurial-licenses',
+      title: 'التراخيص الريادية واحتضان المشاريع',
+      subtitle: 'احتضان الأفكار الريادية والمبتكرة وإصدار التراخيص',
+      groups: [
+        'تأسيس شركة ريادية',
+        'احتضان مشروع ريادي',
+      ],
+    },
+    {
+      id: 'legal-services',
+      title: 'الخدمات القانونية',
+      subtitle: 'محامون موثوقون في القضايا التجارية وجميع الخدمات القانونية',
+      groups: [
+        'القضايا التجارية',
+        'القضايا الإدارية',
+        'القضايا العمالية',
+        'التحكيم وتسوية المنازعات',
+        'صياغة العقود والاتفاقيات',
+        'قضايا أخرى',
+      ],
+    },
+    {
+      id: 'financial-services',
+      title: 'الخدمات المالية',
+      subtitle: 'مستشارون ماليون ومحاسبون قانونيون معتمدون في خدمة شركتك',
+      groups: [
+        'مستشار مالي',
+        'محاسب قانوني',
+        'مدخلو بيانات ومراجعو حسابات',
+        'مالية أخرى',
+      ],
+    },
+    {
+      id: 'marketing-feasibility',
+      title: 'خدمات التسويق ودراسة الجدوى',
+      subtitle: 'خبراء يساعدونك في تقييم جدوى مشروعك وتسويقه وتطوير فرص نموه.',
+      groups: [
+        'دراسة جدوى',
+        'التسويق وتطوير الأعمال',
+      ],
+    },
+    {
+      id: 'premium-residency',
+      title: 'الإقامة المميزة والإقامة الذهبية',
+      subtitle: 'إصدار الإقامة المميزة والذهبية والاستثمارية',
+      groups: [
+        'إقامة مميزة مستثمر أعمال',
+        'إقامة مميزة مالك عقار',
+        'إقامة مميزة رائد أعمال',
+        'إقامة مميزة الموهبة',
+        'إقامة مميزة الكفاءة الاستثنائية',
+        'إقامة مميزة محددة المدة',
+        'إقامة مميزة غير محددة المدة',
+      ],
+    },
+    {
+      id: 'government-procedures',
+      title: 'الإجراءات الحكومية وإدارة المنصات',
+      subtitle: 'إدارة المنصات الحكومية وإنجاز إجراءات الشركات والمؤسسات، بما فيها الزيارات اللازمة.',
+      groups: [
+        'إدارة جميع المنصات الحكومية للشركات والمؤسسات',
+        'طلب زيارة من منشأة حكومية لإنهاء إجراء لشركة أو مؤسسة',
+      ],
+    },
+    {
+      id: 'ready-workspaces',
+      title: 'استئجار مساحة عمل جاهزة',
+      subtitle: 'مساحات عمل مجهزة ومرنة تناسب احتياجات الأفراد والشركات.',
+      groups: [
+        'مكتب مغلق',
+        'مكتب مشترك',
+      ],
+    },
+  ]
+
+  const orderedCategories = [...catalogCategories]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+
+  assert.deepEqual(
+    orderedCategories.map((category) => ({
+      id: category.id,
+      title: category.title,
+      subtitle: category.subtitle,
+    })),
+    expectedCatalog.map(({ id, title, subtitle }) => ({
+      id,
+      title,
+      subtitle,
+    })),
+  )
+
+  assert.equal(catalogCategories.length, 8)
+  assert.equal(catalogGroups.length, 30)
+
+  const approvedCatalog = {
+    getCategoryById: (id: string) =>
+      catalogCategories.find((item) => item.id === id),
+    getGroupById: (id: string) =>
+      catalogGroups.find((item) => item.id === id),
+    getServiceById: (id: string) =>
+      catalogServices.find((item) => item.id === id),
+  }
+
+  for (const expectedCategory of expectedCatalog) {
+    const groups = catalogGroups
+      .filter((group) => group.categoryId === expectedCategory.id)
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+
+    assert.deepEqual(
+      groups.map((group) => group.title),
+      expectedCategory.groups,
+    )
+
+    for (const group of groups) {
+      assert.ok(
+        group.directServiceId,
+        `group ${group.id} must route directly`,
+      )
+
+      const directService = catalogServices.find(
+        (service) => service.id === group.directServiceId,
+      )
+
+      assert.ok(
+        directService,
+        `direct service ${group.directServiceId} must exist`,
+      )
+      assert.equal(directService.categoryId, group.categoryId)
+      assert.equal(directService.groupId, group.id)
+      assert.equal(directService.title, group.title)
+
+      const resolved = resolveChatEntry(
+        {
+          targetType: 'group',
+          targetId: group.id,
+        },
+        approvedCatalog,
+      )
+
+      assert.ok(resolved)
+      assert.equal(resolved.serviceId, group.directServiceId)
+      assert.equal(resolved.selectedService?.serviceName, group.title)
+    }
+  }
+})
