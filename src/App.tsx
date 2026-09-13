@@ -453,6 +453,8 @@ function App() {
         isOpen={state.isOpen}
         isMinimized={state.isMinimized}
         mode={state.context?.mode ?? 'assistant'}
+        customerContact={state.context?.contact}
+        selectedServiceContext={state.context?.service}
         humanConnected={humanConnected}
         humanTimedOut={humanTimedOut}
         preferredContactTime={state.context?.preferredContactTime}

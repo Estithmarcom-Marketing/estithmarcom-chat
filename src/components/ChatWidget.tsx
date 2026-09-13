@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
-import type { ChatMessage, ChatMode, SelectedServiceContext } from '../types'
+import type { ChatMessage, ChatMode, CustomerContact, SelectedServiceContext } from '../types'
 import type { ChatEntryCommand } from '../embed'
 import type { ContactField } from './ContactEnrichment'
 
@@ -32,6 +32,8 @@ interface ChatWidgetProps {
   isOpen: boolean
   isMinimized: boolean
   mode: ChatMode
+  customerContact?: CustomerContact
+  selectedServiceContext?: SelectedServiceContext
   humanConnected: boolean
   humanTimedOut: boolean
   preferredContactTime?: string
@@ -56,6 +58,8 @@ export function ChatWidget({
   isOpen,
   isMinimized,
   mode,
+  customerContact,
+  selectedServiceContext,
   humanConnected,
   humanTimedOut,
   preferredContactTime,
@@ -207,7 +211,11 @@ export function ChatWidget({
               )}
 
               {!isCollectingContact && isHandoffPending && (
-                <HandoffSystemCard variant="waiting" />
+                <HandoffSystemCard
+                  variant="waiting"
+                  contact={customerContact}
+                  service={selectedServiceContext}
+                />
               )}
 
               {!isCollectingContact && isHumanMode && !humanConnected && preferredContactTime && (
@@ -216,7 +224,11 @@ export function ChatWidget({
 
               {!isCollectingContact && isHumanMode && !humanConnected && !preferredContactTime && !humanTimedOut && (
                 <>
-                  <HandoffSystemCard variant="handoff-complete" />
+                  <HandoffSystemCard
+                    variant="handoff-complete"
+                    contact={customerContact}
+                    service={selectedServiceContext}
+                  />
                   <HandoffLiveStatus />
                 </>
               )}
