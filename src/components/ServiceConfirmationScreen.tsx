@@ -50,8 +50,6 @@ export function ServiceConfirmationScreen({
         <div className="flex flex-col gap-2.5">
           {[
             { num: '1', title: 'الخدمة أصبحت واضحة', desc: 'حفظت اختيارك حتى لا تحتاج لإعادة شرح طلبك للموظف.' },
-            { num: '2', title: 'أحتاج فقط بيانات التواصل الناقصة', desc: 'سنطلب الاسم ورقم الجوال فقط إذا لم يكونا موجودين لدينا.' },
-            { num: '3', title: 'نكمل من نفس النقطة', desc: 'بعد اكتمال البيانات، أحولك مباشرة للمختص ليكمل معك من هنا.' },
           ].map((step) => (
             <div key={step.num} className="flex items-start gap-2.5">
               <span className="flex items-center justify-center w-6 h-6 text-[10px] font-bold bg-secondary/10 text-secondary rounded-full shrink-0">{step.num}</span>

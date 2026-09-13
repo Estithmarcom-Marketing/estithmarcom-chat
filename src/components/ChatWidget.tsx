@@ -91,6 +91,12 @@ export function ChatWidget({
     })
   }, [])
 
+  const scrollToTop = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+    })
+  }, [])
+
   useEffect(() => {
     scrollToBottom()
   }, [archivedMessages.length, messages.length, scrollToBottom])
@@ -138,9 +144,9 @@ export function ChatWidget({
     setInitialOptionsReady(false)
     const t1 = window.setTimeout(() => { setInitialGreetingReady(true); scrollToBottom() }, 1800)
     const t2 = window.setTimeout(() => { setInitialOptionsTyping(true); scrollToBottom() }, 3200)
-    const t3 = window.setTimeout(() => { setInitialOptionsTyping(false); setInitialOptionsReady(true); scrollToBottom() }, 5000)
+    const t3 = window.setTimeout(() => { setInitialOptionsTyping(false); setInitialOptionsReady(true); scrollToTop() }, 5000)
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
-  }, [isOpen, isMinimized, messages.length, scrollToBottom])
+  }, [isOpen, isMinimized, messages.length, scrollToBottom, scrollToTop])
 
   if (!isOpen) return <ChatLauncher onOpen={onOpen} showGreeting />
   if (isMinimized) return <ChatLauncher onOpen={onRestore} />
