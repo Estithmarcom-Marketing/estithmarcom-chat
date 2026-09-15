@@ -1,4 +1,5 @@
 export const CHAT_ENTRY_OPEN_MESSAGE = 'estithmarcom.chat.open'
+export const CHAT_LAUNCHER_OPEN_MESSAGE = 'estithmarcom.chat.launcher.open'
 export const CHAT_ENTRY_READY_MESSAGE = 'estithmarcom.chat.ready'
 export const CHAT_ENTRY_STATE_MESSAGE = 'estithmarcom.chat.state'
 export const CHAT_ENTRY_PROTOCOL_VERSION = 1
@@ -124,6 +125,15 @@ function readPageUrl(value: unknown): string | undefined {
   } catch {
     return undefined
   }
+}
+
+export function isChatLauncherOpenMessage(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    value.type === CHAT_LAUNCHER_OPEN_MESSAGE &&
+    value.version === CHAT_ENTRY_PROTOCOL_VERSION &&
+    value.payload === undefined
+  )
 }
 
 export function parseChatEntryPayload(value: unknown): ChatEntryRequest | null {

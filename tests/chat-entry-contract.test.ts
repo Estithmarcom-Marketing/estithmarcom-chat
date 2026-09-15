@@ -3,11 +3,13 @@ import test from 'node:test'
 
 import {
   CHAT_ENTRY_OPEN_MESSAGE,
+  CHAT_LAUNCHER_OPEN_MESSAGE,
   CHAT_ENTRY_STATE_MESSAGE,
   createChatEntryMessage,
   createChatEntryStateMessage,
   getChatEntryViewState,
   isAllowedParentOrigin,
+  isChatLauncherOpenMessage,
   parseAllowedParentOrigins,
   parseChatEntryMessage,
   parseChatEntrySearch,
@@ -51,6 +53,33 @@ const catalog = {
   getGroupById: (id: string) => groups.find((item) => item.id === id),
   getServiceById: (id: string) => services.find((item) => item.id === id),
 }
+
+test('accepts only a versioned generic launcher command', () => {
+  assert.equal(
+    isChatLauncherOpenMessage({
+      type: CHAT_LAUNCHER_OPEN_MESSAGE,
+      version: 1,
+    }),
+    true,
+  )
+
+  assert.equal(
+    isChatLauncherOpenMessage({
+      type: CHAT_LAUNCHER_OPEN_MESSAGE,
+      version: 2,
+    }),
+    false,
+  )
+
+  assert.equal(
+    isChatLauncherOpenMessage({
+      type: CHAT_LAUNCHER_OPEN_MESSAGE,
+      version: 1,
+      payload: {},
+    }),
+    false,
+  )
+})
 
 test('parses a versioned open command', () => {
   const message = createChatEntryMessage({

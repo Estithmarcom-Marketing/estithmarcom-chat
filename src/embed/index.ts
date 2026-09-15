@@ -1,5 +1,6 @@
 export {
   CHAT_ENTRY_OPEN_MESSAGE,
+  CHAT_LAUNCHER_OPEN_MESSAGE,
   CHAT_ENTRY_PROTOCOL_VERSION,
   CHAT_ENTRY_READY_MESSAGE,
   CHAT_ENTRY_STATE_MESSAGE,
@@ -7,6 +8,7 @@ export {
   createChatEntryStateMessage,
   getChatEntryViewState,
   isAllowedParentOrigin,
+  isChatLauncherOpenMessage,
   parseAllowedParentOrigins,
   parseChatEntryMessage,
   parseChatEntryPayload,

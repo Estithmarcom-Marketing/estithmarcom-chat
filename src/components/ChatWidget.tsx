@@ -152,7 +152,18 @@ export function ChatWidget({
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
   }, [isOpen, isMinimized, messages.length, scrollToBottom, scrollToTop])
 
-  if (!isOpen) return <ChatLauncher onOpen={onOpen} showGreeting />
+  const showLauncherGreeting =
+    new URLSearchParams(window.location.search)
+      .get('launcher_greeting') !== '0'
+
+  if (!isOpen) {
+    return (
+      <ChatLauncher
+        onOpen={onOpen}
+        showGreeting={showLauncherGreeting}
+      />
+    )
+  }
   if (isMinimized) return <ChatLauncher onOpen={onRestore} />
 
   const showWelcome = navigation.screen === 'welcome'

@@ -15,6 +15,7 @@ import {
   createChatEntryStateMessage,
   getChatEntryViewState,
   isAllowedParentOrigin,
+  isChatLauncherOpenMessage,
   parseAllowedParentOrigins,
   parseChatEntryMessage,
   parseChatEntrySearch,
@@ -137,6 +138,14 @@ function App() {
     function handleParentMessage(event: MessageEvent<unknown>) {
       if (event.source !== window.parent) return
       if (!isAllowedParentOrigin(event.origin, allowedParentOrigins)) return
+
+      if (isChatLauncherOpenMessage(event.data)) {
+        void loadArchivedMessagesFromServer()
+          .then(setArchivedMessages)
+        dispatch({ type: 'OPEN_CHAT' })
+        return
+      }
+
       const request = parseChatEntryMessage(event.data)
       if (request) queueChatEntry(request)
     }
